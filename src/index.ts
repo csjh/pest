@@ -12,9 +12,9 @@ const decoder = new TextDecoder();
 const defineProperty = Object.defineProperty;
 
 // todo: string cache
-const dynstring: Type = (ptr) =>
+const string: Type = (ptr) =>
     decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)));
-dynstring.sizeof = 0;
+string.sizeof = 0;
 
 type DataViewGetterTypes = Extract<
     keyof DataView,
@@ -80,7 +80,7 @@ const definitions: Type[] = [
     sized(4, "Float32"), sized(8, "Float64"), // 9-10: f32, f64
     sized(1, "Uint8"), // 11: bool
     date, // 12: date
-    dynstring, // 13: string
+    string, // 13: string
 ];
 
 export function parse_message(msg: ArrayBuffer): unknown {
