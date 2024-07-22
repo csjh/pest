@@ -104,25 +104,21 @@ export function parse_message(msg: ArrayBuffer): unknown {
 
     function decode() {
         let n = dv.getUint32(ptr, true);
-        // 2475068 becomes
-        //  n = 10100101110001000011110000000000
-        //  n >> 27            -> 10100
-        // (n >> 27) & 0b11000 -> 10000 <----------------+
-        //  n & 0x3FFFFFFF clears top 2 bits             |
-        // (n & 0x3FFFFFFF) >> ((n >> 27) & 0b11000)     |
-        // clears top 2 bits, then right shifts by 0, 8, 16, or 24 bits
-        const bytes = (n >>> 27) & 0b11000;
+        let bytes = n & 0b11;
         ptr += bytes;
-        n &= 0x3fffffff;
-        return n >>> bytes;
+        n >>= 2;
+        bytes <<= 3;
+        return (n << bytes) >>> bytes;
     }
 
     function decode_s() {
         let n = dv.getUint32(ptr, true);
-        const bytes = (n >> 26) & 0b11000;
+        const sign = n << 31;
+        let bytes = (n & 0b110) >>> 1;
         ptr += bytes;
-        const sign = n & 0x80000000;
-        return sign | ((n & 0x1fffffff) >>> bytes);
+        bytes <<= 3;
+        n >>= 3;
+        return (sign | ((n << bytes) >> bytes)) >>> 0;
     }
 
     while (uint8[ptr]) {
