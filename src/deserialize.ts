@@ -43,7 +43,6 @@ const definitions: Type[] = [
     string, // 13: string
 ];
 
-
 // @ts-expect-error methods are added on later
 class PestArray<T> implements ReadonlyArray<T> {
     length: number;
@@ -55,12 +54,12 @@ class PestArray<T> implements ReadonlyArray<T> {
             get(target, prop) {
                 if (typeof prop === "string" && !isNaN(+prop)) {
                     // prettier-ignore
-                    const addr = depth === 0 && ty.sizeof
+                    const addr = depth === 1 && ty.sizeof
                         // base + length + sizeof(type) * index
                         ? ptr + 4 + +prop * ty.sizeof
                         // base + length + offset_table + offset
                         : ptr + 4 + (len + 1) * 4 + dv.getUint32(ptr + 4 + +prop * 4, true);
-                    if (depth === 0) {
+                    if (depth === 1) {
                         return ty(addr);
                     } else {
                         return new PestArray(addr, depth - 1, ty);
@@ -74,7 +73,7 @@ class PestArray<T> implements ReadonlyArray<T> {
                 return Reflect.get(target, prop);
             },
             set() {
-                throw new Error("cannot set values on PreyArray");
+                throw new Error("cannot set values on PestArray");
             },
             getPrototypeOf() {
                 return Array.prototype;
