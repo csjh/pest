@@ -1,0 +1,9 @@
+{
+    "name": "pest",
+    "version": "0.0.1",
+    "description": "a serialization format for the web",
+    "main": "src/index.js",
+    "scripts": {},
+    "author": "csjh",
+    "license": "MIT"
+}
