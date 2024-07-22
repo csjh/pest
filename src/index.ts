@@ -114,8 +114,9 @@ export function parse_message(msg: ArrayBuffer): unknown {
         let bytes = (n & 0b110) >>> 1;
         ptr += bytes;
         bytes <<= 3;
+        n = (n << bytes) >> bytes;
         n >>= 3;
-        return (sign | ((n << bytes) >> bytes)) >>> 0;
+        return sign | n;
     }
 
     while (uint8[ptr]) {
