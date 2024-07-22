@@ -139,24 +139,31 @@ export function deserialize(msg: ArrayBuffer): unknown {
             let posx = pos;
             if (total_dynamics) {
                 // skip offset table
-                posx += total_dynamics * 4;
+                posx += (total_dynamics + 1) * 4;
                 let table_offset = dynamics * 4;
-                defineProperty(fn, str, {
+                defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(
                             this.$! +
                                 posx +
                                 dv.getUint32(this.$! + table_offset, true)
                         );
-                    }
+                    },
+                    enumerable: true
                 });
-                dynamics++;
             } else {
-                defineProperty(fn, str, {
-                    get() {
-                        return ty(this.$ + posx);
-                    }
+                defineProperty(fn.prototype, str, {
+                    get(this: Type) {
+                        return ty(this.$! + posx);
+                    },
+                    enumerable: true
                 });
+            }
+            if (ty.sizeof) {
+                pos += ty.sizeof;
+            } else {
+                pos = 0;
+                dynamics++;
             }
         }
         ptr++;
