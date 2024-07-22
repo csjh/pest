@@ -55,10 +55,7 @@ class PestArray<T> implements ReadonlyArray<T> {
                     } else {
                         return new PestArray(addr, depth - 1, ty);
                     }
-                } else if (
-                    typeof prop === "string" &&
-                    prop in Array.prototype
-                ) {
+                } else if (prop in Array.prototype) {
                     return function (...args: unknown[]) {
                         // @ts-expect-error idek why it's whining
                         return Array.prototype[prop].apply(target, args);
