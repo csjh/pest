@@ -9,7 +9,6 @@ const dv = new DataView(buffer);
 const uint8 = new Uint8Array(buffer);
 let ptr = 0;
 const decoder = new TextDecoder();
-const defineProperty = Object.defineProperty;
 
 type DataViewGetterTypes = Extract<
     keyof DataView,
@@ -141,7 +140,7 @@ export function deserialize(msg: ArrayBuffer): unknown {
                 // skip offset table
                 posx += (total_dynamics + 1) * 4;
                 let table_offset = dynamics * 4;
-                defineProperty(fn.prototype, str, {
+                Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(
                             this.$! +
@@ -152,7 +151,7 @@ export function deserialize(msg: ArrayBuffer): unknown {
                     enumerable: true
                 });
             } else {
-                defineProperty(fn.prototype, str, {
+                Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(this.$! + posx);
                     },
