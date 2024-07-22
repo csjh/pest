@@ -11,11 +11,6 @@ let ptr = 0;
 const decoder = new TextDecoder();
 const defineProperty = Object.defineProperty;
 
-// todo: string cache
-const string: Type = (ptr) =>
-    decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)));
-string.sizeof = 0;
-
 type DataViewGetterTypes = Extract<
     keyof DataView,
     `get${string}`
@@ -23,16 +18,20 @@ type DataViewGetterTypes = Extract<
     ? T
     : never;
 
+const nil: Type = (_) => null;
+nil.sizeof = 1;
+const date: Type = (ptr) => new Date(dv.getFloat64(ptr));
+date.sizeof = 8;
+// todo: string cache
+const string: Type = (ptr) =>
+    decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)));
+string.sizeof = 0;
+
 const sized = (size: number, ty: DataViewGetterTypes): Type => {
     const Num: Type = (ptr) => dv[`get${ty}`](ptr);
     Num.sizeof = size;
     return Num;
 };
-
-const nil: Type = (_) => null;
-nil.sizeof = 1;
-const date: Type = (ptr) => new Date(dv.getFloat64(ptr));
-date.sizeof = 8;
 
 // prettier-ignore
 const definitions: Type[] = [
