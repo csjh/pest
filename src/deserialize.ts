@@ -127,8 +127,9 @@ export function deserialize(msg: ArrayBuffer): unknown {
         let dynamics = 0;
 
         const fn = (definitions[type_id] = function (this: Type, ptr) {
+            if (!this) return new fn(ptr);
             this.$ = ptr;
-        } as Type);
+        } as Type & { new (ptr: number): Type });
 
         while (uint8[ptr]) {
             const start = ptr;
