@@ -181,15 +181,6 @@ export function deserialize(msg: ArrayBuffer): unknown {
     return payload_type(ptr);
 }
 
-console.log(
-    deserialize(
-        new Uint8Array([
-            0x00, 15, 7, 0x0, 0x0, 0x0, 0x0, 0x0, 0x00, 0x0, 0x0, 0x0, 0x0, 0x0,
-            0x0, 0x0, 0x3, 0x00, 0x0, 0x0, 0x1, 0x2, 0x3
-        ]).buffer
-    )
-);
-
 /*
 typedef typeid (variable length integer with leading bits indicating depth of array then number indicating type)
 
