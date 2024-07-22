@@ -104,7 +104,7 @@ export function deserialize(msg: ArrayBuffer): unknown {
         ptr += 4 - bytes;
         bytes <<= 3;
         n = (n << bytes) >>> bytes;
-        n >>= 2;
+        n >>>= 2;
         return n;
     }
 
@@ -115,7 +115,7 @@ export function deserialize(msg: ArrayBuffer): unknown {
         ptr += 4 - bytes;
         bytes <<= 3;
         n = (n << bytes) >>> bytes;
-        n >>= 3;
+        n >>>= 3;
         return sign | n;
     }
 
