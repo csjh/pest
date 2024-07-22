@@ -102,19 +102,20 @@ export function deserialize(msg: ArrayBuffer): unknown {
     function decode() {
         let n = dv.getUint32(ptr, true);
         let bytes = n & 0b11;
-        ptr += bytes;
-        n >>= 2;
+        ptr += 4 - bytes;
         bytes <<= 3;
-        return (n << bytes) >>> bytes;
+        n = (n << bytes) >>> bytes;
+        n >>= 2;
+        return n;
     }
 
     function decode_s() {
         let n = dv.getUint32(ptr, true);
         const sign = n << 31;
         let bytes = (n & 0b110) >>> 1;
-        ptr += bytes;
+        ptr += 4 - bytes;
         bytes <<= 3;
-        n = (n << bytes) >> bytes;
+        n = (n << bytes) >>> bytes;
         n >>= 3;
         return sign | n;
     }
