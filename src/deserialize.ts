@@ -42,43 +42,31 @@ const definitions: Type[] = [
     string, // 13: string
 ];
 
-class PestArray {
-    constructor(ptr: number, depth: number, ty: Type) {
-        // maybe make this a varint?
-        const len = dv.getUint32(ptr, true);
-        return new Proxy(this, {
-            get(target, prop) {
-                if (prop === "length") {
-                    return len;
-                } else if (typeof prop === "string" && !isNaN(+prop)) {
-                    // base + length +
-                    // prettier-ignore
-                    const addr = ptr + 4 + (depth === 1 && ty.sizeof
-                        // + sizeof(type) * index
-                        ? +prop * ty.sizeof
-                        // + offset_table + offset
-                        : len * 4 + dv.getUint32(ptr + 4 + +prop * 4, true));
-                    if (depth === 1) {
-                        return ty(addr);
-                    } else {
-                        return new PestArray(addr, depth - 1, ty);
-                    }
-                } else if (prop in Array.prototype) {
-                    return function (...args: unknown[]) {
-                        // @ts-expect-error idek why it's whining
-                        return Array.prototype[prop].apply(target, args);
-                    };
+function PestArray(ptr: number, depth: number, ty: Type) {
+    const len = dv.getUint32(ptr, true);
+    // prettier-ignore
+    return new Proxy({}, {
+        get(target, prop, receiver) {
+            if (prop === "length") {
+                return len;
+            } else if (typeof prop === "string" && !isNaN(+prop)) {
+                // base + length +
+                const addr = ptr + 4 + (depth === 1 && ty.s
+                    // + sizeof(type) * index
+                    ? +prop * ty.s
+                    // + offset_table + offset
+                    : len * 4 + dv.getUint32(ptr + 4 + +prop * 4, true));
+                if (depth === 1) {
+                    return ty(addr);
+                } else {
+                    return PestArray(addr, depth - 1, ty);
                 }
-                return Reflect.get(target, prop);
-            },
-            set() {
-                throw new Error("cannot set values on PestArray");
-            },
-            getPrototypeOf() {
-                return Array.prototype;
             }
-        });
-    }
+            // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
+            return Array.prototype[prop].bind(receiver);
+        },
+        getPrototypeOf: () => Array.prototype
+    });
 }
 
 export function deserialize(msg: Response): Promise<unknown>;
@@ -100,7 +88,7 @@ export function deserialize(msg: Uint8Array | Response): unknown {
 function _deserialize(ptr: number): unknown {
     function makeArrayer(ty: Type): Type {
         const depth = decode();
-        const fn = (ptr: number) => new PestArray(ptr, depth, ty);
+        const fn = (ptr: number) => PestArray(ptr, depth, ty);
         return fn;
     }
 
