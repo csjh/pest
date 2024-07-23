@@ -148,10 +148,10 @@ function _deserialize(ptr: number): unknown {
             ptr++;
             const ty = get_definition();
             let posx = pos;
-            if (total_dynamics) {
+            if (total_dynamics && ty.sizeof === 0) {
                 // skip offset table
                 posx += (total_dynamics + 1) * 4;
-                let table_offset = dynamics * 4;
+                const table_offset = dynamics * 4;
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(
@@ -163,6 +163,7 @@ function _deserialize(ptr: number): unknown {
                     enumerable: true
                 });
             } else {
+                if (total_dynamics) posx += (total_dynamics + 1) * 4;
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(this.$! + posx);
