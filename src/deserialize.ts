@@ -1,7 +1,8 @@
 type Type = {
     (ptr: number): any;
     $?: number;
-    sizeof?: number;
+    // sizeof
+    s?: number;
 };
 
 const buffer = new ArrayBuffer(1 << 16);
@@ -18,16 +19,16 @@ type DataViewGetterTypes = Extract<
     : never;
 
 const nil: Type = (_) => null;
-nil.sizeof = 1;
+nil.s = 1;
 const date: Type = (ptr) => new Date(dv.getFloat64(ptr));
-date.sizeof = 8;
+date.s = 8;
 // todo: string cache
 const string: Type = (ptr) =>
     decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)));
 
 const sized = (size: number, ty: DataViewGetterTypes): Type => {
     const Num: Type = (ptr) => dv[`get${ty}`](ptr);
-    Num.sizeof = size;
+    Num.s = size;
     return Num;
 };
 
@@ -148,7 +149,7 @@ function _deserialize(ptr: number): unknown {
             ptr++;
             const ty = get_definition();
             let posx = pos;
-            if (total_dynamics && ty.sizeof === 0) {
+            if (total_dynamics && ty.s === 0) {
                 // skip offset table
                 posx += total_dynamics * 4;
                 const table_offset = dynamics * 4;
@@ -171,8 +172,8 @@ function _deserialize(ptr: number): unknown {
                     enumerable: true
                 });
             }
-            if (ty.sizeof) {
-                pos += ty.sizeof;
+            if (ty.s) {
+                pos += ty.s;
             } else {
                 pos = 0;
                 dynamics++;
@@ -190,7 +191,7 @@ function _deserialize(ptr: number): unknown {
         // calculate pointer for dynamics with ptr + pos + uint32[ptr+nearest_dynamic_idx]
         //                   for statics  with ptr + pos
 
-        fn.sizeof = total_dynamics ? 0 : pos;
+        fn.s = total_dynamics ? 0 : pos;
     }
     ptr++;
 
