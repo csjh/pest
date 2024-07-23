@@ -69,20 +69,15 @@ function PestArray(ptr: number, depth: number, ty: Type) {
     });
 }
 
-export function deserialize(msg: Response): Promise<unknown>;
-export function deserialize(msg: Uint8Array): unknown;
-export function deserialize(msg: Uint8Array | Response): unknown {
-    if (msg instanceof Response) {
-        return msg
-            .arrayBuffer()
-            .then((buf) => deserialize(new Uint8Array(buf)));
-    } else {
-        uint8.set(msg, ptr);
-        const end = ptr + msg.byteLength;
-        const obj = _deserialize(ptr);
-        ptr = end;
-        return obj;
-    }
+export async function deserializeResponse(msg: Response): Promise<unknown> {
+    return deserialize(new Uint8Array(await msg.arrayBuffer()));
+}
+
+export function deserialize(msg: Uint8Array): unknown {
+    uint8.set(msg, ptr);
+    const obj = _deserialize(ptr);
+    ptr += msg.byteLength;
+    return obj;
 }
 
 function _deserialize(ptr: number): unknown {
