@@ -114,7 +114,7 @@ const structs = [
     ["Coordinate", [["x", "u8"], ["y", "u8"]]],
     ["Player", [["name", "string"], ["pos", "Coordinate"]]],
     ["Game", [["players", "Player[]"]]]
-] as const;
+] satisfies [string, [string, string][]][];
 export function serialize(data: unknown, schema: string): Uint8Array {
     let uint8 = new Uint8Array(1000);
     let ptr = 0;
@@ -159,6 +159,8 @@ export function serialize(data: unknown, schema: string): Uint8Array {
     }
 
     for (const [name, fields] of structs) {
+        fields.sort((a, b) => +type_is_dynamic(a[1]) - +type_is_dynamic(b[1]));
+
         if (!enumeration.has(name)) enumeration.set(name, next_id++);
         const id = enumeration.get(name)!;
         let total_dynamics = 0;
