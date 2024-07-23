@@ -41,16 +41,15 @@ const definitions: Type[] = [
     string, // 13: string
 ];
 
-// @ts-expect-error methods are added on later
-class PestArray<T> implements ReadonlyArray<T> {
-    length: number;
-
+class PestArray {
     constructor(ptr: number, depth: number, ty: Type) {
         // maybe make this a varint?
-        const len = (this.length = dv.getUint32(ptr, true));
+        const len = dv.getUint32(ptr, true);
         return new Proxy(this, {
             get(target, prop) {
-                if (typeof prop === "string" && !isNaN(+prop)) {
+                if (prop === "length") {
+                    return len;
+                } else if (typeof prop === "string" && !isNaN(+prop)) {
                     // base + length +
                     // prettier-ignore
                     const addr = ptr + 4 + (depth === 1 && ty.sizeof
