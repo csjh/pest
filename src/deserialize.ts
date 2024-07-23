@@ -80,10 +80,24 @@ class PestArray<T> implements ReadonlyArray<T> {
     }
 }
 
-export function deserialize(msg: ArrayBuffer): unknown {
-    uint8.set(new Uint8Array(msg), ptr);
+export function deserialize(msg: Response): Promise<unknown>;
+export function deserialize(msg: Uint8Array): unknown;
+export function deserialize(msg: Uint8Array | Response): unknown {
+    if (msg instanceof Response) {
+        return msg
+            .arrayBuffer()
+            .then((buf) => deserialize(new Uint8Array(buf)));
+    } else {
+        uint8.set(msg, ptr);
+        const end = ptr + msg.byteLength;
+        const obj = _deserialize(ptr);
+        ptr = end;
+        return obj;
+    }
+}
 
-    function makeArrayer(ty: Type) {
+function _deserialize(ptr: number): unknown {
+    function makeArrayer(ty: Type): Type {
         const depth = decode();
         const fn = (ptr: number) => new PestArray(ptr, depth, ty);
         return fn;
