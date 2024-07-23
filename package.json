@@ -5,5 +5,8 @@
     "main": "src/index.js",
     "scripts": {},
     "author": "csjh",
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "typescript": "^5.5.4"
+    }
 }
