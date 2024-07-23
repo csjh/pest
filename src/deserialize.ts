@@ -1,7 +1,7 @@
 type Type = {
     (ptr: number): any;
     $?: number;
-    sizeof: number;
+    sizeof?: number;
 };
 
 const buffer = new ArrayBuffer(1 << 16);
@@ -24,7 +24,6 @@ date.sizeof = 8;
 // todo: string cache
 const string: Type = (ptr) =>
     decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)));
-string.sizeof = 0;
 
 const sized = (size: number, ty: DataViewGetterTypes): Type => {
     const Num: Type = (ptr) => dv[`get${ty}`](ptr);
@@ -87,7 +86,6 @@ export function deserialize(msg: ArrayBuffer): unknown {
     function makeArrayer(ty: Type) {
         const depth = decode();
         const fn = (ptr: number) => new PestArray(ptr, depth, ty);
-        fn.sizeof = 0;
         return fn;
     }
 
