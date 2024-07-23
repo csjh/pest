@@ -77,14 +77,14 @@ function array_serializer(type: string): Serializer {
             let ptr = 0;
             dv.setUint32(0, data.length, true);
             ptr += 4; // length
-            ptr += 4 * (data.length + 1); // offset table
+            ptr += 4 * data.length; // offset table
             for (let i = 0; i < data.length; i++) {
-                ptr += serializer(data[i], buffer.subarray(ptr));
                 dv.setUint32(
-                    4 + 4 * (i + 1),
-                    ptr - (4 + 4 * (data.length + 1)),
+                    4 + 4 * i,
+                    ptr - (4 + 4 * data.length),
                     true
                 );
+                ptr += serializer(data[i], buffer.subarray(ptr));
             }
             return ptr;
         };
@@ -173,21 +173,21 @@ export function serialize(data: unknown, schema: string): Uint8Array {
                 is_dynamic.add(id);
                 definitions[id] = (data, buffer) => {
                     const dv = new DataView(buffer.buffer, buffer.byteOffset);
-                    let ptr = (total_dynamics + 1) * 4;
+                    let ptr = total_dynamics * 4;
                     let dynamics = 0;
                     for (const [name, type] of fields) {
-                        ptr += get_serializer(type)(
-                            data[name],
-                            buffer.subarray(ptr)
-                        );
                         if (type_is_dynamic(type)) {
                             dv.setUint32(
-                                4 + dynamics * 4,
-                                ptr - (total_dynamics + 1) * 4,
+                                dynamics * 4,
+                                ptr - total_dynamics * 4,
                                 true
                             );
                             dynamics++;
                         }
+                        ptr += get_serializer(type)(
+                            data[name],
+                            buffer.subarray(ptr)
+                        );
                     }
                     return ptr;
                 };

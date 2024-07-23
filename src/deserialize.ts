@@ -51,12 +51,13 @@ class PestArray<T> implements ReadonlyArray<T> {
         return new Proxy(this, {
             get(target, prop) {
                 if (typeof prop === "string" && !isNaN(+prop)) {
+                    // base + length +
                     // prettier-ignore
-                    const addr = depth === 1 && ty.sizeof
-                        // base + length + sizeof(type) * index
-                        ? ptr + 4 + +prop * ty.sizeof
-                        // base + length + offset_table + offset
-                        : ptr + 4 + (len + 1) * 4 + dv.getUint32(ptr + 4 + +prop * 4, true);
+                    const addr = ptr + 4 + (depth === 1 && ty.sizeof
+                        // + sizeof(type) * index
+                        ? +prop * ty.sizeof
+                        // + offset_table + offset
+                        : len * 4 + dv.getUint32(ptr + 4 + +prop * 4, true));
                     if (depth === 1) {
                         return ty(addr);
                     } else {
@@ -150,7 +151,7 @@ function _deserialize(ptr: number): unknown {
             let posx = pos;
             if (total_dynamics && ty.sizeof === 0) {
                 // skip offset table
-                posx += (total_dynamics + 1) * 4;
+                posx += total_dynamics * 4;
                 const table_offset = dynamics * 4;
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
@@ -163,7 +164,7 @@ function _deserialize(ptr: number): unknown {
                     enumerable: true
                 });
             } else {
-                if (total_dynamics) posx += (total_dynamics + 1) * 4;
+                if (total_dynamics) posx += total_dynamics * 4;
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(this.$! + posx);
