@@ -129,7 +129,7 @@ function _deserialize(ptr: number): unknown {
             ptr++;
             const ty = get_definition();
             let posx = pos;
-            if (total_dynamics && ty.s === 0) {
+            if (total_dynamics && !ty.s) {
                 // skip offset table
                 posx += total_dynamics * 4;
                 const table_offset = dynamics * 4;
