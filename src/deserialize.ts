@@ -18,28 +18,25 @@ type DataViewGetterTypes = Extract<
     ? T
     : never;
 
-const nil: Type = (_) => null;
-nil.s = 1;
-const date: Type = (ptr) => new Date(dv.getFloat64(ptr));
-date.s = 8;
-// todo: string cache
-const string: Type = (ptr) =>
-    decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)));
+function num(size: number, ty: string): Type {
+    // @ts-expect-error doesn't know number is proper
+    return sized((ptr) => dv[`get${ty}${size * 8}`](ptr), size);
+}
 
-const sized = (size: number, ty: DataViewGetterTypes): Type => {
-    const Num: Type = (ptr) => dv[`get${ty}`](ptr);
-    Num.s = size;
-    return Num;
-};
+function sized(ty: Type, size: number): Type {
+    ty.s = size;
+    return ty;
+}
 
 // prettier-ignore
 const definitions: Type[] = [
-    nil, // 0: null
-    sized(1, "Int8"), sized(2, "Int16"), sized(4, "Int32"), sized(8, "BigInt64"), sized(1, "Uint8"), sized(2, "Uint16"), sized(4, "Uint32"), sized(8, "BigUint64"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
-    sized(4, "Float32"), sized(8, "Float64"), // 9-10: f32, f64
-    sized(1, "Uint8"), // 11: bool
-    date, // 12: date
-    string, // 13: string
+    sized((_) => null, 1), // 0: null
+    num(1, "Int"), num(2, "Int"), num(4, "Int"), num(8, "BigInt"), num(1, "Uint"), num(2, "Uint"), num(4, "Uint"), num(8, "BigUint"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
+    num(4, "Float"), num(8, "Float"), // 9-10: f32, f64
+    num(1, "Uint"), // 11: bool
+    sized((ptr) => new Date(dv.getFloat64(ptr)), 8), // 12: date
+    // todo: string cache
+    (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true))), // 13: string
 ];
 
 function PestArray(ptr: number, depth: number, ty: Type) {
