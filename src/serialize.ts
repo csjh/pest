@@ -35,7 +35,7 @@ type DataViewSetterTypes = Extract<
     ? T
     : never;
 
-function sized(size: number, ty: DataViewSetterTypes): Serializer {
+function num(size: number, ty: DataViewSetterTypes): Serializer {
     return (data, buffer) => {
         new DataView(buffer.buffer, buffer.byteOffset)[
             `set${ty}`
@@ -45,28 +45,23 @@ function sized(size: number, ty: DataViewSetterTypes): Serializer {
     };
 }
 
-// null is going to need special handling
-const nil: Serializer = (_, buffer) => ((buffer[0] = 0), 1);
-const date: Serializer = sized(8, "Float64");
-// todo: string cache
-const string: Serializer = (data, buffer) => {
-    // todo: switch to var30
-    new DataView(buffer.buffer, buffer.byteOffset).setUint32(
-        0,
-        data.length,
-        true
-    );
-    return 4 + encoder.encodeInto(data, buffer.subarray(4)).written;
-};
-
 // prettier-ignore
 const definitions: Serializer[] = [
-    nil, // 0: null
-    sized(1, "Int8"), sized(2, "Int16"), sized(4, "Int32"), sized(8, "BigInt64"), sized(1, "Uint8"), sized(2, "Uint16"), sized(4, "Uint32"), sized(8, "BigUint64"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
-    sized(4, "Float32"), sized(8, "Float64"), // 9-10: f32, f64
-    sized(1, "Uint8"), // 11: bool
-    date, // 12: date
-    string, // 13: string
+    // null is going to need a special case
+    (_, buffer) => ((buffer[0] = 0), 1), // 0: null
+    num(1, "Int8"), num(2, "Int16"), num(4, "Int32"), num(8, "BigInt64"), num(1, "Uint8"), num(2, "Uint16"), num(4, "Uint32"), num(8, "BigUint64"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
+    num(4, "Float32"), num(8, "Float64"), // 9-10: f32, f64
+    num(1, "Uint8"), // 11: bool
+    num(8, "Float64"), // 12: date
+    (data, buffer) => {
+        // todo: switch to var30
+        new DataView(buffer.buffer, buffer.byteOffset).setUint32(
+            0,
+            data.length,
+            true
+        );
+        return 4 + encoder.encodeInto(data, buffer.subarray(4)).written;
+    }, // 13: string
 ];
 
 function array_serializer(type: string): Serializer {
@@ -79,11 +74,7 @@ function array_serializer(type: string): Serializer {
             ptr += 4; // length
             ptr += 4 * data.length; // offset table
             for (let i = 0; i < data.length; i++) {
-                dv.setUint32(
-                    4 + 4 * i,
-                    ptr - (4 + 4 * data.length),
-                    true
-                );
+                dv.setUint32(4 + 4 * i, ptr - (4 + 4 * data.length), true);
                 ptr += serializer(data[i], buffer.subarray(ptr));
             }
             return ptr;
