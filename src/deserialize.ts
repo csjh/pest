@@ -42,7 +42,7 @@ const definitions: Type[] = [
 function PestArray(ptr: number, depth: number, ty: Type) {
     const len = dv.getUint32(ptr, true);
     // prettier-ignore
-    return new Proxy({}, {
+    return new Proxy([], {
         get(target, prop, receiver) {
             if (prop === "length") {
                 return len;
@@ -60,7 +60,7 @@ function PestArray(ptr: number, depth: number, ty: Type) {
                 }
             }
             // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
-            return Array.prototype[prop].bind(receiver);
+            return Array.prototype[prop]?.bind(receiver);
         },
         getPrototypeOf: () => Array.prototype
     });
