@@ -173,15 +173,20 @@ export function serialize(data: unknown, schema: string): Uint8Array {
                 is_dynamic.add(id);
                 definitions[id] = (data, buffer) => {
                     const dv = new DataView(buffer.buffer, buffer.byteOffset);
-                    let ptr = total_dynamics * 4;
+                    let first_dyn = 0;
+                    let ptr = (total_dynamics - 1) * 4;
                     let dynamics = 0;
                     for (const [name, type] of fields) {
                         if (type_is_dynamic(type)) {
-                            dv.setUint32(
-                                dynamics * 4,
-                                ptr - total_dynamics * 4,
-                                true
-                            );
+                            if (dynamics === 0) {
+                                first_dyn = ptr;
+                            } else {
+                                dv.setUint32(
+                                    (dynamics - 1) * 4,
+                                    ptr - first_dyn,
+                                    true
+                                );
+                            }
                             dynamics++;
                         }
                         ptr += get_serializer(type)(

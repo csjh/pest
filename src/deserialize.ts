@@ -114,7 +114,8 @@ function _deserialize(ptr: number): unknown {
     while (uint8[ptr]) {
         const type_id = decode();
         const total_dynamics = decode();
-        let pos = 0;
+        // values start after the offset table
+        let pos = total_dynamics ? (total_dynamics - 1) * 4 : 0;
         let dynamics = 0;
 
         const fn = (definitions[type_id] = function (this: Type, ptr) {
@@ -128,11 +129,9 @@ function _deserialize(ptr: number): unknown {
             const str = decoder.decode(uint8.slice(start, ptr));
             ptr++;
             const ty = get_definition();
-            let posx = pos;
-            if (total_dynamics && !ty.s) {
-                // skip offset table
-                posx += total_dynamics * 4;
-                const table_offset = dynamics * 4;
+            const posx = pos;
+            if (!ty.s && dynamics !== 0) {
+                const table_offset = (dynamics - 1) * 4;
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(
@@ -144,7 +143,6 @@ function _deserialize(ptr: number): unknown {
                     enumerable: true
                 });
             } else {
-                if (total_dynamics) posx += total_dynamics * 4;
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(this.$! + posx);
@@ -155,7 +153,6 @@ function _deserialize(ptr: number): unknown {
             if (ty.s) {
                 pos += ty.s;
             } else {
-                pos = 0;
                 dynamics++;
             }
         }
