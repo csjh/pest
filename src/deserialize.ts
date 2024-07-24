@@ -11,13 +11,6 @@ const uint8 = new Uint8Array(buffer);
 let ptr = 0;
 const decoder = new TextDecoder();
 
-type DataViewGetterTypes = Extract<
-    keyof DataView,
-    `get${string}`
-> extends `get${infer T}`
-    ? T
-    : never;
-
 function num(size: number, ty: string): Type {
     // @ts-expect-error doesn't know number is proper
     return sized((ptr) => dv[`get${ty}${size * 8}`](ptr), size);
@@ -139,15 +132,13 @@ function _deserialize(ptr: number): unknown {
                                 posx +
                                 dv.getUint32(this.$! + table_offset, true)
                         );
-                    },
-                    enumerable: true
+                    }
                 });
             } else {
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(this.$! + posx);
-                    },
-                    enumerable: true
+                    }
                 });
             }
             if (ty.s) {
@@ -157,16 +148,6 @@ function _deserialize(ptr: number): unknown {
             }
         }
         ptr++;
-
-        // what we know at this point:
-        //   - where the fields start (i.e. size of the end offsets array)
-        //   - if there are dynamic fields
-        //   - the size of the struct if it's static
-        //   - the offsets of static fields relative to the nearest dynamic field
-        //   - the nearest dynamic field to each static field <--- !
-
-        // calculate pointer for dynamics with ptr + pos + uint32[ptr+nearest_dynamic_idx]
-        //                   for statics  with ptr + pos
 
         fn.s = total_dynamics ? 0 : pos;
     }
