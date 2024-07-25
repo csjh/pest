@@ -1,39 +1,43 @@
-const encoder = new TextEncoder();
+export function serialize(structs: [string, [string, string][]][], data: unknown, schema: string): Uint8Array {
+    let uint8 = new Uint8Array(1000);
+    let ptr = 0;
 
-let next_id = 0;
-// prettier-ignore
-const enumeration: Map<string, number> = new Map([
-    "null",
-    "i8",
-    "i16",
-    "i32",
-    "i64",
-    "u8",
-    "u16",
-    "u32",
-    "u64",
-    "f32",
-    "f64",
-    "bool",
-    "date",
-    "string"
-].map((x) => [x, next_id++] as const));
+    const encoder = new TextEncoder();
 
-const is_dynamic: Set<number> = new Set();
-is_dynamic.add(enumeration.get("string")!);
+    let next_id = 0;
+    // prettier-ignore
+    const enumeration: Map<string, number> = new Map([
+        "null",
+        "i8",
+        "i16",
+        "i32",
+        "i64",
+        "u8",
+        "u16",
+        "u32",
+        "u64",
+        "f32",
+        "f64",
+        "bool",
+        "date",
+        "string"
+    ].map((x) => [x, next_id++] as const));
 
-function type_is_dynamic(type: string): boolean {
-    return type.endsWith("[]") || is_dynamic.has(enumeration.get(type)!);
-}
+    const is_dynamic: Set<number> = new Set();
+    is_dynamic.add(enumeration.get("string")!);
 
-type Serializer = (data: any, buffer: Uint8Array) => number;
+    function type_is_dynamic(type: string): boolean {
+        return type.endsWith("[]") || is_dynamic.has(enumeration.get(type)!);
+    }
 
-type DataViewSetterTypes = Extract<
-    keyof DataView,
-    `set${string}`
-> extends `set${infer T}`
-    ? T
-    : never;
+    type Serializer = (data: any, buffer: Uint8Array) => number;
+
+    type DataViewSetterTypes = Extract<
+        keyof DataView,
+        `set${string}`
+    > extends `set${infer T}`
+        ? T
+        : never;
 
 function num(size: number, ty: DataViewSetterTypes): Serializer {
     return (data, buffer) => {
@@ -64,51 +68,41 @@ const definitions: Serializer[] = [
     }, // 13: string
 ];
 
-function array_serializer(type: string): Serializer {
-    const serializer = get_serializer(type);
-    if (type_is_dynamic(type)) {
-        return (data, buffer) => {
-            const dv = new DataView(buffer.buffer, buffer.byteOffset);
-            let ptr = 0;
-            dv.setUint32(0, data.length, true);
-            ptr += 4; // length
-            ptr += 4 * data.length; // offset table
-            for (let i = 0; i < data.length; i++) {
-                dv.setUint32(4 + 4 * i, ptr - (4 + 4 * data.length), true);
-                ptr += serializer(data[i], buffer.subarray(ptr));
-            }
-            return ptr;
-        };
-    } else {
-        return (data, buffer) => {
-            const dv = new DataView(buffer.buffer, buffer.byteOffset);
-            let ptr = 0;
-            dv.setUint32(0, data.length, true);
-            ptr += 4; // length
-            for (let i = 0; i < data.length; i++) {
-                ptr += serializer(data[i], buffer.subarray(ptr));
-            }
-            return ptr;
-        };
+    function array_serializer(type: string): Serializer {
+        const serializer = get_serializer(type);
+        if (type_is_dynamic(type)) {
+            return (data, buffer) => {
+                const dv = new DataView(buffer.buffer, buffer.byteOffset);
+                let ptr = 0;
+                dv.setUint32(0, data.length, true);
+                ptr += 4; // length
+                ptr += 4 * data.length; // offset table
+                for (let i = 0; i < data.length; i++) {
+                    dv.setUint32(4 + 4 * i, ptr - (4 + 4 * data.length), true);
+                    ptr += serializer(data[i], buffer.subarray(ptr));
+                }
+                return ptr;
+            };
+        } else {
+            return (data, buffer) => {
+                const dv = new DataView(buffer.buffer, buffer.byteOffset);
+                let ptr = 0;
+                dv.setUint32(0, data.length, true);
+                ptr += 4; // length
+                for (let i = 0; i < data.length; i++) {
+                    ptr += serializer(data[i], buffer.subarray(ptr));
+                }
+                return ptr;
+            };
+        }
     }
-}
 
-function get_serializer(type: string): Serializer {
-    const id = enumeration.get(type)!;
-    return type.endsWith("[]")
-        ? array_serializer(type.slice(0, -2))
-        : definitions[id];
-}
-
-// prettier-ignore
-const structs = [
-    ["Coordinate", [["x", "u8"], ["y", "u8"]]],
-    ["Player", [["name", "string"], ["pos", "Coordinate"]]],
-    ["Game", [["players", "Player[]"]]]
-] satisfies [string, [string, string][]][];
-export function serialize(data: unknown, schema: string): Uint8Array {
-    let uint8 = new Uint8Array(1000);
-    let ptr = 0;
+    function get_serializer(type: string): Serializer {
+        const id = enumeration.get(type)!;
+        return type.endsWith("[]")
+            ? array_serializer(type.slice(0, -2))
+            : definitions[id];
+    }
 
     function emit(value: number, size: number = 1) {
         while (ptr + size >= uint8.length) {
@@ -164,15 +158,20 @@ export function serialize(data: unknown, schema: string): Uint8Array {
                 is_dynamic.add(id);
                 definitions[id] = (data, buffer) => {
                     const dv = new DataView(buffer.buffer, buffer.byteOffset);
-                    let ptr = total_dynamics * 4;
+                    let first_dyn = 0;
+                    let ptr = (total_dynamics - 1) * 4;
                     let dynamics = 0;
                     for (const [name, type] of fields) {
                         if (type_is_dynamic(type)) {
-                            dv.setUint32(
-                                dynamics * 4,
-                                ptr - total_dynamics * 4,
-                                true
-                            );
+                            if (dynamics === 0) {
+                                first_dyn = ptr;
+                            } else {
+                                dv.setUint32(
+                                    (dynamics - 1) * 4,
+                                    ptr - first_dyn,
+                                    true
+                                );
+                            }
                             dynamics++;
                         }
                         ptr += get_serializer(type)(

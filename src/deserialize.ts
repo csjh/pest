@@ -1,70 +1,8 @@
-type Type = {
-    (ptr: number): any;
-    $?: number;
-    // sizeof
-    s?: number;
-};
-
 const buffer = new ArrayBuffer(1 << 16);
-const dv = new DataView(buffer);
 const uint8 = new Uint8Array(buffer);
 let ptr = 0;
+const dv = new DataView(buffer);
 const decoder = new TextDecoder();
-
-type DataViewGetterTypes = Extract<
-    keyof DataView,
-    `get${string}`
-> extends `get${infer T}`
-    ? T
-    : never;
-
-function num(size: number, ty: string): Type {
-    // @ts-expect-error doesn't know number is proper
-    return sized((ptr) => dv[`get${ty}${size * 8}`](ptr), size);
-}
-
-function sized(ty: Type, size: number): Type {
-    ty.s = size;
-    return ty;
-}
-
-// prettier-ignore
-const definitions: Type[] = [
-    sized((_) => null, 1), // 0: null
-    num(1, "Int"), num(2, "Int"), num(4, "Int"), num(8, "BigInt"), num(1, "Uint"), num(2, "Uint"), num(4, "Uint"), num(8, "BigUint"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
-    num(4, "Float"), num(8, "Float"), // 9-10: f32, f64
-    num(1, "Uint"), // 11: bool
-    sized((ptr) => new Date(dv.getFloat64(ptr)), 8), // 12: date
-    // todo: string cache
-    (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true))), // 13: string
-];
-
-function PestArray(ptr: number, depth: number, ty: Type) {
-    const len = dv.getUint32(ptr, true);
-    // prettier-ignore
-    return new Proxy({}, {
-        get(target, prop, receiver) {
-            if (prop === "length") {
-                return len;
-            } else if (typeof prop === "string" && !isNaN(+prop)) {
-                // base + length +
-                const addr = ptr + 4 + (depth === 1 && ty.s
-                    // + sizeof(type) * index
-                    ? +prop * ty.s
-                    // + offset_table + offset
-                    : len * 4 + dv.getUint32(ptr + 4 + +prop * 4, true));
-                if (depth === 1) {
-                    return ty(addr);
-                } else {
-                    return PestArray(addr, depth - 1, ty);
-                }
-            }
-            // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
-            return Array.prototype[prop].bind(receiver);
-        },
-        getPrototypeOf: () => Array.prototype
-    });
-}
 
 export async function deserializeResponse(msg: Response): Promise<unknown> {
     return deserialize(new Uint8Array(await msg.arrayBuffer()));
@@ -78,6 +16,60 @@ export function deserialize(msg: Uint8Array): unknown {
 }
 
 function _deserialize(ptr: number): unknown {
+    type Type = {
+        (ptr: number): any;
+        $?: number;
+        // sizeof
+        s?: number;
+    };
+
+    function num(size: number, ty: string): Type {
+        // @ts-expect-error doesn't know number is proper
+        return sized((ptr) => dv[`get${ty}${size * 8}`](ptr), size);
+    }
+
+    function sized(ty: Type, size: number): Type {
+        ty.s = size;
+        return ty;
+    }
+
+    // prettier-ignore
+    const definitions: Type[] = [
+        sized((_) => null, 1), // 0: null
+        num(1, "Int"), num(2, "Int"), num(4, "Int"), num(8, "BigInt"), num(1, "Uint"), num(2, "Uint"), num(4, "Uint"), num(8, "BigUint"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
+        num(4, "Float"), num(8, "Float"), // 9-10: f32, f64
+        num(1, "Uint"), // 11: bool
+        sized((ptr) => new Date(dv.getFloat64(ptr)), 8), // 12: date
+        // todo: string cache
+        (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true))), // 13: string
+    ];
+
+    function PestArray(ptr: number, depth: number, ty: Type) {
+        const len = dv.getUint32(ptr, true);
+        // prettier-ignore
+        return new Proxy([], {
+            get(target, prop, receiver) {
+                if (prop === "length") {
+                    return len;
+                } else if (typeof prop === "string" && !isNaN(+prop)) {
+                    // base + length +
+                    const addr = ptr + 4 + (depth === 1 && ty.s
+                        // + sizeof(type) * index
+                        ? +prop * ty.s
+                        // + offset_table + offset
+                        : len * 4 + dv.getUint32(ptr + 4 + +prop * 4, true));
+                    if (depth === 1) {
+                        return ty(addr);
+                    } else {
+                        return PestArray(addr, depth - 1, ty);
+                    }
+                }
+                // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
+                return Array.prototype[prop]?.bind(receiver);
+            },
+            getPrototypeOf: () => Array.prototype
+        });
+    }
     function makeArrayer(ty: Type): Type {
         const depth = decode();
         const fn = (ptr: number) => PestArray(ptr, depth, ty);
@@ -114,7 +106,8 @@ function _deserialize(ptr: number): unknown {
     while (uint8[ptr]) {
         const type_id = decode();
         const total_dynamics = decode();
-        let pos = 0;
+        // values start after the offset table
+        let pos = total_dynamics ? (total_dynamics - 1) * 4 : 0;
         let dynamics = 0;
 
         const fn = (definitions[type_id] = function (this: Type, ptr) {
@@ -128,11 +121,9 @@ function _deserialize(ptr: number): unknown {
             const str = decoder.decode(uint8.slice(start, ptr));
             ptr++;
             const ty = get_definition();
-            let posx = pos;
-            if (total_dynamics && !ty.s) {
-                // skip offset table
-                posx += total_dynamics * 4;
-                const table_offset = dynamics * 4;
+            const posx = pos;
+            if (!ty.s && dynamics !== 0) {
+                const table_offset = (dynamics - 1) * 4;
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(
@@ -140,36 +131,22 @@ function _deserialize(ptr: number): unknown {
                                 posx +
                                 dv.getUint32(this.$! + table_offset, true)
                         );
-                    },
-                    enumerable: true
+                    }
                 });
             } else {
-                if (total_dynamics) posx += total_dynamics * 4;
                 Object.defineProperty(fn.prototype, str, {
                     get(this: Type) {
                         return ty(this.$! + posx);
-                    },
-                    enumerable: true
+                    }
                 });
             }
             if (ty.s) {
                 pos += ty.s;
             } else {
-                pos = 0;
                 dynamics++;
             }
         }
         ptr++;
-
-        // what we know at this point:
-        //   - where the fields start (i.e. size of the end offsets array)
-        //   - if there are dynamic fields
-        //   - the size of the struct if it's static
-        //   - the offsets of static fields relative to the nearest dynamic field
-        //   - the nearest dynamic field to each static field <--- !
-
-        // calculate pointer for dynamics with ptr + pos + uint32[ptr+nearest_dynamic_idx]
-        //                   for statics  with ptr + pos
 
         fn.s = total_dynamics ? 0 : pos;
     }
