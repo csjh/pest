@@ -1,4 +1,8 @@
-export function serialize(structs: [string, [string, string][]][], data: unknown, schema: string): Uint8Array {
+export function serialize(
+    structs: [string, [string, string][]][],
+    data: unknown,
+    schema: string
+): Uint8Array {
     let uint8 = new Uint8Array(1000);
     let ptr = 0;
 
@@ -39,34 +43,34 @@ export function serialize(structs: [string, [string, string][]][], data: unknown
         ? T
         : never;
 
-function num(size: number, ty: DataViewSetterTypes): Serializer {
-    return (data, buffer) => {
-        new DataView(buffer.buffer, buffer.byteOffset)[
-            `set${ty}`
-            // @ts-expect-error wah wah
-        ](0, data, true);
-        return size;
-    };
-}
+    function num(size: number, ty: DataViewSetterTypes): Serializer {
+        return (data, buffer) => {
+            new DataView(buffer.buffer, buffer.byteOffset)[
+                `set${ty}`
+                // @ts-expect-error wah wah
+            ](0, data, true);
+            return size;
+        };
+    }
 
-// prettier-ignore
-const definitions: Serializer[] = [
-    // null is going to need a special case
-    (_, buffer) => ((buffer[0] = 0), 1), // 0: null
-    num(1, "Int8"), num(2, "Int16"), num(4, "Int32"), num(8, "BigInt64"), num(1, "Uint8"), num(2, "Uint16"), num(4, "Uint32"), num(8, "BigUint64"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
-    num(4, "Float32"), num(8, "Float64"), // 9-10: f32, f64
-    num(1, "Uint8"), // 11: bool
-    num(8, "Float64"), // 12: date
-    (data, buffer) => {
-        // todo: switch to var30
-        new DataView(buffer.buffer, buffer.byteOffset).setUint32(
-            0,
-            data.length,
-            true
-        );
-        return 4 + encoder.encodeInto(data, buffer.subarray(4)).written;
-    }, // 13: string
-];
+    // prettier-ignore
+    const definitions: Serializer[] = [
+        // null is going to need a special case
+        (_, buffer) => ((buffer[0] = 0), 1), // 0: null
+        num(1, "Int8"), num(2, "Int16"), num(4, "Int32"), num(8, "BigInt64"), num(1, "Uint8"), num(2, "Uint16"), num(4, "Uint32"), num(8, "BigUint64"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
+        num(4, "Float32"), num(8, "Float64"), // 9-10: f32, f64
+        num(1, "Uint8"), // 11: bool
+        num(8, "Float64"), // 12: date
+        (data, buffer) => {
+            // todo: switch to var30
+            new DataView(buffer.buffer, buffer.byteOffset).setUint32(
+                0,
+                data.length,
+                true
+            );
+            return 4 + encoder.encodeInto(data, buffer.subarray(4)).written;
+        }, // 13: string
+    ];
 
     function array_serializer(type: string): Serializer {
         const serializer = get_serializer(type);
