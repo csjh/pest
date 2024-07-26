@@ -3,7 +3,8 @@ export function serialize(
     data: unknown,
     schema: string
 ): Uint8Array {
-    let uint8 = new Uint8Array(1000);
+    let uint8 = new Uint8Array(1);
+    let dv = new DataView(uint8.buffer);
     let ptr = 0;
 
     const encoder = new TextEncoder();
@@ -34,7 +35,8 @@ export function serialize(
         return type.endsWith("[]") || is_dynamic.has(enumeration.get(type)!);
     }
 
-    type Serializer = (data: any, buffer: Uint8Array) => number;
+    // return undefined instead of void to make sure there's no accidental returns
+    type Serializer = (data: any) => undefined;
 
     type DataViewSetterTypes = Extract<
         keyof DataView,
@@ -44,59 +46,57 @@ export function serialize(
         : never;
 
     function num(size: number, ty: DataViewSetterTypes): Serializer {
-        return (data, buffer) => {
-            new DataView(buffer.buffer, buffer.byteOffset)[
-                `set${ty}`
-                // @ts-expect-error wah wah
-            ](0, data, true);
-            return size;
+        return (data) => {
+            reserve(size);
+            // @ts-expect-error wah wah
+            dv[`set${ty}`](ptr, data, true);
+            ptr += size;
         };
     }
 
     // prettier-ignore
     const definitions: Serializer[] = [
         // null is going to need a special case
-        (_, buffer) => ((buffer[0] = 0), 1), // 0: null
+        (_) => {
+            reserve(1);
+            uint8[ptr++] = 0;
+        }, // 0: null
         num(1, "Int8"), num(2, "Int16"), num(4, "Int32"), num(8, "BigInt64"), num(1, "Uint8"), num(2, "Uint16"), num(4, "Uint32"), num(8, "BigUint64"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
         num(4, "Float32"), num(8, "Float64"), // 9-10: f32, f64
         num(1, "Uint8"), // 11: bool
         num(8, "Float64"), // 12: date
-        (data, buffer) => {
-            // todo: switch to var30
-            new DataView(buffer.buffer, buffer.byteOffset).setUint32(
-                0,
-                data.length,
-                true
-            );
-            return 4 + encoder.encodeInto(data, buffer.subarray(4)).written;
+        (data) => {
+            // i think this is enough for utf-16
+            reserve(4 + data.length * 2);
+            const length = encoder.encodeInto(data, uint8.subarray(ptr + 4)).written;
+            dv.setUint32(ptr, length, true);
+            ptr += 4 + length;
         }, // 13: string
     ];
 
     function array_serializer(type: string): Serializer {
         const serializer = get_serializer(type);
         if (type_is_dynamic(type)) {
-            return (data, buffer) => {
-                const dv = new DataView(buffer.buffer, buffer.byteOffset);
-                let ptr = 0;
-                dv.setUint32(0, data.length, true);
-                ptr += 4; // length
+            return (data) => {
+                emit(data.length, 4);
+                const start = ptr;
+                reserve(4 * data.length);
                 ptr += 4 * data.length; // offset table
                 for (let i = 0; i < data.length; i++) {
-                    dv.setUint32(4 + 4 * i, ptr - (4 + 4 * data.length), true);
-                    ptr += serializer(data[i], buffer.subarray(ptr));
+                    dv.setUint32(
+                        start + 4 * i,
+                        ptr - 4 * data.length - start,
+                        true
+                    );
+                    serializer(data[i]);
                 }
-                return ptr;
             };
         } else {
-            return (data, buffer) => {
-                const dv = new DataView(buffer.buffer, buffer.byteOffset);
-                let ptr = 0;
-                dv.setUint32(0, data.length, true);
-                ptr += 4; // length
+            return (data) => {
+                emit(data.length, 4);
                 for (let i = 0; i < data.length; i++) {
-                    ptr += serializer(data[i], buffer.subarray(ptr));
+                    serializer(data[i]);
                 }
-                return ptr;
             };
         }
     }
@@ -108,14 +108,19 @@ export function serialize(
             : definitions[id];
     }
 
-    function emit(value: number, size: number = 1) {
+    function reserve(size: number) {
         while (ptr + size >= uint8.length) {
             const old = uint8;
             uint8 = new Uint8Array(old.length * 2);
             uint8.set(old);
+            dv = new DataView(uint8.buffer);
         }
+    }
+
+    function emit(value: number, size: number = 1) {
+        reserve(size);
         for (let i = 0; i < size; i++) {
-            uint8[ptr++] = (value >> (i * 8)) & 0xff;
+            uint8[ptr++] = (value >>> (i * 8)) & 0xff;
         }
     }
 
@@ -160,10 +165,10 @@ export function serialize(
         if (!definitions[id]) {
             if (total_dynamics) {
                 is_dynamic.add(id);
-                definitions[id] = (data, buffer) => {
-                    const dv = new DataView(buffer.buffer, buffer.byteOffset);
+                definitions[id] = (data) => {
+                    const start = ptr;
                     let first_dyn = 0;
-                    let ptr = (total_dynamics - 1) * 4;
+                    ptr += (total_dynamics - 1) * 4;
                     let dynamics = 0;
                     for (const [name, type] of fields) {
                         if (type_is_dynamic(type)) {
@@ -171,30 +176,21 @@ export function serialize(
                                 first_dyn = ptr;
                             } else {
                                 dv.setUint32(
-                                    (dynamics - 1) * 4,
+                                    start + (dynamics - 1) * 4,
                                     ptr - first_dyn,
                                     true
                                 );
                             }
                             dynamics++;
                         }
-                        ptr += get_serializer(type)(
-                            data[name],
-                            buffer.subarray(ptr)
-                        );
+                        get_serializer(type)(data[name]);
                     }
-                    return ptr;
                 };
             } else {
-                definitions[id] = (data, buffer) => {
-                    let ptr = 0;
+                definitions[id] = (data) => {
                     for (const [name, type] of fields) {
-                        ptr += get_serializer(type)(
-                            data[name],
-                            buffer.subarray(ptr)
-                        );
+                        get_serializer(type)(data[name]);
                     }
-                    return ptr;
                 };
             }
         }
@@ -202,6 +198,8 @@ export function serialize(
         encode(id);
         encode(total_dynamics);
         for (const [name, type] of fields) {
+            // should be enough for utf-16
+            reserve(name.length * 2);
             ptr += encoder.encodeInto(name, uint8.subarray(ptr)).written;
             emit(0);
             encode_type(type);
@@ -212,6 +210,6 @@ export function serialize(
 
     encode_type(schema);
     while (ptr % 16 !== 0) emit(0);
-    ptr += get_serializer(schema)(data, uint8.subarray(ptr));
+    get_serializer(schema)(data);
     return uint8.subarray(0, ptr);
 }
