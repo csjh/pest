@@ -1,4 +1,4 @@
-import { Deserializer, PestType } from "./types.js";
+import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
 interface Instance {
     $: number;
@@ -10,14 +10,14 @@ let ptr = 0;
 const dv = new DataView(buffer);
 const decoder = new TextDecoder();
 
-export function deserialize(msg: Uint8Array, schema: PestType): unknown {
+export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     uint8.set(msg, ptr);
-    const obj = _deserialize(ptr, schema);
+    const obj = _deserialize(ptr, schema as unknown as PestTypeInternal);
     ptr += msg.byteLength;
-    return obj;
+    return obj as T;
 }
 
-function _deserialize(ptr: number, schema: PestType): unknown {
+function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
     // prettier-ignore
     const definitions = [
         (ptr) => dv.getInt8(ptr),  (ptr) => dv.getInt16(ptr, true),  (ptr) => dv.getInt32(ptr, true),  (ptr) => dv.getBigInt64(ptr, true),
@@ -28,7 +28,7 @@ function _deserialize(ptr: number, schema: PestType): unknown {
         (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)))
     ] satisfies Deserializer[];
 
-    function PestArray(ptr: number, depth: number, ty: PestType) {
+    function PestArray(ptr: number, depth: number, ty: PestTypeInternal) {
         const len = dv.getUint32(ptr, true);
         // prettier-ignore
         return new Proxy([], {
@@ -55,7 +55,7 @@ function _deserialize(ptr: number, schema: PestType): unknown {
         });
     }
 
-    function get_deserializer(ty: PestType) {
+    function get_deserializer(ty: PestTypeInternal) {
         if (ty.i < definitions.length) return definitions[ty.i];
         if (ty.d) return ty.d;
         if (ty.e) return (ty.d = (ptr) => PestArray(ptr, ty.y, ty.e!));

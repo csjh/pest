@@ -1,8 +1,13 @@
-import { PestType, Serializer } from "./types.js";
+import { PestType, PestTypeInternal, Serializer } from "./types.js";
 
 const encoder = new TextEncoder();
 
-export function serialize(data: unknown, schema: PestType): Uint8Array {
+export function serialize<T>(
+    data: NoInfer<T>,
+    _schema: PestType<T>
+): Uint8Array {
+    const schema = _schema as unknown as PestTypeInternal;
+
     let uint8 = new Uint8Array(1);
     let dv = new DataView(uint8.buffer);
     let ptr = 0;
@@ -35,7 +40,7 @@ export function serialize(data: unknown, schema: PestType): Uint8Array {
         }
     ] satisfies Serializer[];
 
-    function get_serializer(ty: PestType) {
+    function get_serializer(ty: PestTypeInternal) {
         if (ty.i < definitions.length) return definitions[ty.i];
         if (ty.s) return ty.s;
         if (ty.e) {
