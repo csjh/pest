@@ -1,4 +1,4 @@
-import { PestType } from "./types";
+import { PestType } from "./types.js";
 
 export const i8 = { i: 0, z: 1 } as PestType;
 export const i16 = { i: 1, z: 2 } as PestType;

@@ -1,3 +1,3 @@
-export { serialize } from "./serialize";
-export { deserialize } from "./deserialize";
-export * from "./primitives";
+export { serialize } from "./serialize.js";
+export { deserialize } from "./deserialize.js";
+export * from "./primitives.js";

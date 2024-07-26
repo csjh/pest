@@ -1,4 +1,4 @@
-import { PestType, Serializer } from "./types";
+import { PestType, Serializer } from "./types.js";
 
 const encoder = new TextEncoder();
 

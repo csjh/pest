@@ -1,4 +1,4 @@
-import { Deserializer, PestType } from "./types";
+import { Deserializer, PestType } from "./types.js";
 
 interface Instance {
     $: number;
