@@ -8,5 +8,15 @@
     "license": "MIT",
     "dependencies": {
         "typescript": "^5.5.4"
+    },
+    "exports": {
+        ".": {
+            "import": "./build/index.js",
+            "require": "./build/index.js"
+        },
+        "./internal": {
+            "import": "./build/internal/index.js",
+            "require": "./build/internal/index.js"
+        }
     }
 }
