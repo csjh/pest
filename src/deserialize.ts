@@ -1,50 +1,34 @@
+import { Deserializer, PestType } from "./internal/types";
+
+interface Instance {
+    $: number;
+}
+
 const buffer = new ArrayBuffer(1 << 16);
 const uint8 = new Uint8Array(buffer);
 let ptr = 0;
 const dv = new DataView(buffer);
 const decoder = new TextDecoder();
 
-export async function deserializeResponse(msg: Response): Promise<unknown> {
-    return deserialize(new Uint8Array(await msg.arrayBuffer()));
-}
-
-export function deserialize(msg: Uint8Array): unknown {
+export function deserialize(msg: Uint8Array, schema: PestType): unknown {
     uint8.set(msg, ptr);
-    const obj = _deserialize(ptr);
+    const obj = _deserialize(ptr, schema);
     ptr += msg.byteLength;
     return obj;
 }
 
-function _deserialize(ptr: number): unknown {
-    type Type = {
-        (ptr: number): any;
-        $?: number;
-        // sizeof
-        s?: number;
-    };
-
-    function num(size: number, ty: string): Type {
-        // @ts-expect-error doesn't know number is proper
-        return sized((ptr) => dv[`get${ty}${size * 8}`](ptr), size);
-    }
-
-    function sized(ty: Type, size: number): Type {
-        ty.s = size;
-        return ty;
-    }
-
+function _deserialize(ptr: number, schema: PestType): unknown {
     // prettier-ignore
-    const definitions: Type[] = [
-        sized((_) => null, 1), // 0: null
-        num(1, "Int"), num(2, "Int"), num(4, "Int"), num(8, "BigInt"), num(1, "Uint"), num(2, "Uint"), num(4, "Uint"), num(8, "BigUint"), // 1-8: i8, i16, i32, i64, u8, u16, u32, u64
-        num(4, "Float"), num(8, "Float"), // 9-10: f32, f64
-        num(1, "Uint"), // 11: bool
-        sized((ptr) => new Date(dv.getFloat64(ptr)), 8), // 12: date
-        // todo: string cache
-        (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true))), // 13: string
-    ];
+    const definitions = [
+        (ptr) => dv.getInt8(ptr),  (ptr) => dv.getInt16(ptr, true),  (ptr) => dv.getInt32(ptr, true),  (ptr) => dv.getBigInt64(ptr, true),
+        (ptr) => dv.getUint8(ptr), (ptr) => dv.getUint16(ptr, true), (ptr) => dv.getUint32(ptr, true), (ptr) => dv.getBigUint64(ptr, true),
+        (ptr) => dv.getFloat32(ptr), (ptr) => dv.getFloat64(ptr),
+        (ptr) => dv.getUint8(ptr) !== 0,
+        (ptr) => new Date(dv.getFloat64(ptr)),
+        (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)))
+    ] satisfies Deserializer[];
 
-    function PestArray(ptr: number, depth: number, ty: Type) {
+    function PestArray(ptr: number, depth: number, ty: PestType) {
         const len = dv.getUint32(ptr, true);
         // prettier-ignore
         return new Proxy([], {
@@ -53,13 +37,13 @@ function _deserialize(ptr: number): unknown {
                     return len;
                 } else if (typeof prop === "string" && !isNaN(+prop)) {
                     // base + length +
-                    const addr = ptr + 4 + (depth === 1 && ty.s
+                    const addr = ptr + 4 + (depth === 1 && ty.z
                         // + sizeof(type) * index
-                        ? +prop * ty.s
+                        ? +prop * ty.z
                         // + offset_table + offset
                         : len * 4 + dv.getUint32(ptr + 4 + +prop * 4, true));
                     if (depth === 1) {
-                        return ty(addr);
+                        return get_deserializer(ty)(addr);
                     } else {
                         return PestArray(addr, depth - 1, ty);
                     }
@@ -70,16 +54,53 @@ function _deserialize(ptr: number): unknown {
             getPrototypeOf: () => Array.prototype
         });
     }
-    function makeArrayer(ty: Type): Type {
-        const depth = decode();
-        const fn = (ptr: number) => PestArray(ptr, depth, ty);
-        return fn;
-    }
 
-    function get_definition() {
-        const n = decode_s();
-        const def = definitions[n & 0x7fffffff];
-        return n < 0 ? makeArrayer(def) : def;
+    function get_deserializer(ty: PestType) {
+        if (ty.i < definitions.length) return definitions[ty.i];
+        if (ty.d) return ty.d;
+        if (ty.e) return (ty.d = (ptr) => PestArray(ptr, ty.y, ty.e!));
+
+        // values start after the offset table
+        let pos = ty.y ? (ty.y - 1) * 4 : 0;
+        let dynamics = 0;
+
+        const fn = (ty.d = function (this: Instance, ptr: number) {
+            // @ts-expect-error technically doesn't have right signature
+            if (!this) return new ty.d(ptr);
+            this.$ = ptr;
+        });
+
+        for (const [name, field] of Object.entries(ty.f).sort(
+            (a, b) => b[1].z - a[1].z
+        )) {
+            const deserializer = get_deserializer(field);
+            const posx = pos;
+            if (!ty.z && dynamics !== 0) {
+                const table_offset = (dynamics - 1) * 4;
+                Object.defineProperty(fn.prototype, name, {
+                    get(this: Instance) {
+                        return deserializer(
+                            this.$! +
+                                posx +
+                                dv.getUint32(this.$! + table_offset, true)
+                        );
+                    }
+                });
+            } else {
+                Object.defineProperty(fn.prototype, name, {
+                    get(this: Instance) {
+                        return deserializer(this.$! + posx);
+                    }
+                });
+            }
+            if (field.z) {
+                pos += field.z;
+            } else {
+                dynamics++;
+            }
+        }
+
+        return ty.d;
     }
 
     function decode() {
@@ -103,59 +124,22 @@ function _deserialize(ptr: number): unknown {
         return sign | n;
     }
 
-    while (uint8[ptr]) {
-        const type_id = decode();
-        const total_dynamics = decode();
-        // values start after the offset table
-        let pos = total_dynamics ? (total_dynamics - 1) * 4 : 0;
-        let dynamics = 0;
-
-        const fn = (definitions[type_id] = function (this: Type, ptr) {
-            if (!this) return new fn(ptr);
-            this.$ = ptr;
-        } as Type & { new (ptr: number): Type });
-
-        while (uint8[ptr]) {
-            const start = ptr;
-            while (uint8[++ptr]);
-            const str = decoder.decode(uint8.slice(start, ptr));
-            ptr++;
-            const ty = get_definition();
-            const posx = pos;
-            if (!ty.s && dynamics !== 0) {
-                const table_offset = (dynamics - 1) * 4;
-                Object.defineProperty(fn.prototype, str, {
-                    get(this: Type) {
-                        return ty(
-                            this.$! +
-                                posx +
-                                dv.getUint32(this.$! + table_offset, true)
-                        );
-                    }
-                });
-            } else {
-                Object.defineProperty(fn.prototype, str, {
-                    get(this: Type) {
-                        return ty(this.$! + posx);
-                    }
-                });
-            }
-            if (ty.s) {
-                pos += ty.s;
-            } else {
-                dynamics++;
-            }
+    const type_id = decode_s();
+    if (type_id < 0) {
+        const depth = decode();
+        if (!schema.e) {
+            throw new Error("Expected array type");
         }
-        ptr++;
-
-        fn.s = total_dynamics ? 0 : pos;
+        if (depth !== schema.y) {
+            throw new Error("Depth mismatch");
+        }
     }
-    ptr++;
-
-    const payload_type = get_definition();
-    // ptr += (-ptr & 15)
-    while (ptr % 16 !== 0) ptr++;
-    return payload_type(ptr);
+    if ((type_id & 0x7fffffff) !== schema.i) {
+        throw new Error("Type mismatch");
+    }
+    // ptr += -ptr & 15;
+    // while (ptr % 16 !== 0) ptr++;
+    return get_deserializer(schema)(ptr);
 }
 
 /*
