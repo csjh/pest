@@ -22,9 +22,9 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
     const definitions = [
         (ptr) => dv.getInt8(ptr),  (ptr) => dv.getInt16(ptr, true),  (ptr) => dv.getInt32(ptr, true),  (ptr) => dv.getBigInt64(ptr, true),
         (ptr) => dv.getUint8(ptr), (ptr) => dv.getUint16(ptr, true), (ptr) => dv.getUint32(ptr, true), (ptr) => dv.getBigUint64(ptr, true),
-        (ptr) => dv.getFloat32(ptr), (ptr) => dv.getFloat64(ptr),
+        (ptr) => dv.getFloat32(ptr, true), (ptr) => dv.getFloat64(ptr, true),
         (ptr) => dv.getUint8(ptr) !== 0,
-        (ptr) => new Date(dv.getFloat64(ptr)),
+        (ptr) => new Date(dv.getFloat64(ptr, true)),
         (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)))
     ] satisfies Deserializer[];
 
