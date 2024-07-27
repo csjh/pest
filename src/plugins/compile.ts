@@ -50,7 +50,7 @@ export function compile(code: string, opts: CompileOptions): string {
         }
 
         return (
-            `export { serialize, deserialize, array } from "pest/internal";
+            `export { serialize, deserialize } from "pest/internal";
 import { array, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, date as Date, string } from "pest/internal";
 ` +
             Object.entries(definitions)
