@@ -4,13 +4,18 @@ interface Instance {
     $: number;
 }
 
-const buffer = new ArrayBuffer(1 << 24);
-const uint8 = new Uint8Array(buffer);
+const buffer = new ArrayBuffer(1024, { maxByteLength: 1 << 30 });
+let uint8 = new Uint8Array(buffer);
 let ptr = 0;
-const dv = new DataView(buffer);
+let dv = new DataView(buffer);
 const decoder = new TextDecoder();
 
 export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
+    while (ptr + msg.byteLength > buffer.byteLength) {
+        buffer.resize(buffer.byteLength * 2);
+        uint8 = new Uint8Array(buffer);
+        dv = new DataView(buffer);
+    }
     uint8.set(msg, ptr);
     const obj = _deserialize(ptr, schema as unknown as PestTypeInternal);
     ptr += msg.byteLength;
