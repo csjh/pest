@@ -19,6 +19,16 @@ export interface PestTypeInternal {
     z: number;
 }
 
+export type Unwrap<T> = T extends PestType<infer U>
+    ? Unwrap<U>
+    : T extends Date
+    ? Date
+    : T extends (infer U)[]
+    ? Unwrap<U>[]
+    : T extends Record<any, any>
+    ? { [K in keyof T]: Unwrap<T[K]> }
+    : T;
+
 declare const type: unique symbol;
 export interface PestType<T> {
     readonly [type]: T;
