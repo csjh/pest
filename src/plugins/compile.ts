@@ -51,7 +51,7 @@ export function compile(code: string, opts: CompileOptions): string {
 
         return (
             `export { serialize, deserialize } from "pest/internal";
-import { array, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, date as Date, string } from "pest/internal";
+import { array, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, Date, string } from "pest/internal";
 ` +
             Object.entries(definitions)
                 .map(([name, members], i) => {
@@ -89,7 +89,6 @@ declare const u64: bigint;
 declare const f32: number;
 declare const f64: number;
 declare const bool: boolean;
-declare const date: Date;
 ` +
             Object.entries(definitions)
                 .map(([name, members]) => {

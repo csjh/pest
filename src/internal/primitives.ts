@@ -11,7 +11,7 @@ export const u64 = { i: 7, z: 8 } as PestTypeInternal;
 export const f32 = { i: 8, z: 4 } as PestTypeInternal;
 export const f64 = { i: 9, z: 8 } as PestTypeInternal;
 export const bool = { i: 10, z: 1 } as PestTypeInternal;
-export const date = { i: 11, z: 8 } as PestTypeInternal;
+export const Date = { i: 11, z: 8 } as PestTypeInternal;
 export const string = { i: 12, z: 0 } as PestTypeInternal;
 
 export function array<T>(ty: PestType<T>, depth: number = 1): PestType<T[]> {
