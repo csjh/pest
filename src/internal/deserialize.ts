@@ -51,7 +51,12 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
                 // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
                 return Array.prototype[prop]?.bind(receiver);
             },
-            getPrototypeOf: () => Array.prototype
+            has(target, prop) {
+                return prop in Array.prototype || (typeof prop === "string" && !isNaN(+prop) && +prop < len);
+            },
+            getPrototypeOf() {
+                return Array.prototype;
+            }
         });
     }
 
@@ -84,13 +89,15 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
                                 posx +
                                 dv.getUint32(this.$! + table_offset, true)
                         );
-                    }
+                    },
+                    enumerable: true
                 });
             } else {
                 Object.defineProperty(fn.prototype, name, {
                     get(this: Instance) {
                         return deserializer(this.$! + posx);
-                    }
+                    },
+                    enumerable: true
                 });
             }
             if (field.z) {
