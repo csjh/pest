@@ -4,7 +4,7 @@ interface Instance {
     $: number;
 }
 
-const buffer = new ArrayBuffer(1 << 16);
+const buffer = new ArrayBuffer(1 << 24);
 const uint8 = new Uint8Array(buffer);
 let ptr = 0;
 const dv = new DataView(buffer);
@@ -72,7 +72,7 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
         const fn = (ty.d = function (this: Instance, ptr: number) {
             // @ts-expect-error technically doesn't have right signature
             if (!this) return new ty.d(ptr);
-            this.$ = ptr;
+            Object.defineProperty(this, "$", { value: ptr });
         });
 
         for (const [name, field] of Object.entries(ty.f).sort(

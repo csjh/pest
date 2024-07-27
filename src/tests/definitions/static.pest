@@ -1,0 +1,9 @@
+interface Coordinate {
+    x: f32;
+    y: f32;
+}
+
+interface Locations {
+    home: Coordinate;
+    work: Coordinate;
+}

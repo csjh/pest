@@ -1,0 +1,19 @@
+interface Coordinate {
+    x: f32;
+    y: f32;
+}
+
+interface SavedLocation {
+    name: string;
+    importance: i32;
+    coord: Coordinate;
+    starred: bool;
+    saved_at: Date;
+}
+
+interface Map {
+    locations: SavedLocation[];
+    user: string;
+    default: SavedLocation;
+    current: SavedLocation;
+}
