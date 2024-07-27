@@ -10,7 +10,7 @@ export interface PestTypeInternal {
     // element type if array
     e?: PestTypeInternal;
     // serializer
-    s?: Serializer;
+    // s?: Serializer;
     // deserializer
     d?: Deserializer;
     // fields

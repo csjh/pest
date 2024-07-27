@@ -40,11 +40,10 @@ export function serialize<T>(
         }
     ] satisfies Serializer[];
 
-    function get_serializer(ty: PestTypeInternal) {
+    function get_serializer(ty: PestTypeInternal): Serializer {
         if (ty.i < definitions.length) return definitions[ty.i];
-        if (ty.s) return ty.s;
         if (ty.e) {
-            return (ty.s = ty.e.y
+            return ty.e.y
                 ? (data) => {
                       emit(data.length, 4);
                       const start = ptr;
@@ -64,10 +63,10 @@ export function serialize<T>(
                       for (let i = 0; i < data.length; i++) {
                           get_serializer(ty.e!)(data[i]);
                       }
-                  });
+                  };
         }
 
-        return (ty.s = ty.y
+        return ty.y
             ? (data) => {
                   const start = ptr;
                   let first_dyn = 0;
@@ -95,7 +94,7 @@ export function serialize<T>(
                   for (const name in ty.f) {
                       get_serializer(ty.f[name])(data[name]);
                   }
-              });
+              };
     }
 
     function reserve(size: number) {
