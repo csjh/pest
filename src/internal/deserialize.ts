@@ -145,8 +145,10 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
         if (depth !== schema.y) {
             throw new Error("Depth mismatch");
         }
-    }
-    if ((type_id & 0x7fffffff) !== schema.i) {
+        if ((type_id & 0x7fffffff) !== schema.e.i) {
+            throw new Error("Type mismatch");
+        }
+    } else if (type_id !== schema.i) {
         throw new Error("Type mismatch");
     }
     // ptr += -ptr & 15;

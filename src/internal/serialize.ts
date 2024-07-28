@@ -127,7 +127,7 @@ export function serialize<T>(
     }
 
     if (schema.e) {
-        encode_s(schema.i | (1 << 31));
+        encode_s(schema.e.i | (1 << 31));
         encode(schema.y);
     } else {
         encode_s(schema.i);
