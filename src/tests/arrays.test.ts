@@ -115,4 +115,18 @@ describe("definitions", async () => {
         expect(mirror(map, array(Map))).toEqual(map);
         expect(leftEqual(map, deserialize(serialize(map, array(Map)), array(Map)))).toBe(true);
     });
+
+    it("should work as an array", async () => {
+        const { serialize, deserialize, Coordinate } = await getSingleModule(
+            new URL("./definitions/static.pest", import.meta.url)
+        );
+
+        const coord = [{ x: 1, y: 2 }];
+        const serialized = serialize(coord, array(Coordinate));
+        const deserialized = deserialize(serialized, array(Coordinate));
+
+        expect(deserialized.map((c) => c.x)).toEqual(coord.map((c) => c.x));
+        expect(deserialized.map((c) => c.y)).toEqual(coord.map((c) => c.y));
+        expect(deserialized.every((c) => typeof c === 'object')).toBe(true);
+    })
 });
