@@ -7,7 +7,7 @@ interface SavedLocation {
     name: string;
     importance: i32;
     coord: Coordinate;
-    starred: bool;
+    starred: boolean;
     saved_at: Date;
 }
 
