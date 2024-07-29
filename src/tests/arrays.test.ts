@@ -52,14 +52,32 @@ describe("definitions", async () => {
 
         const coord = [{ x: 1, y: 2 }];
         expect(mirror(coord, array(Coordinate))).toEqual(coord);
-        expect(leftEqual(coord, deserialize(serialize(coord, array(Coordinate)), array(Coordinate)))).toBe(true);
+        expect(
+            leftEqual(
+                coord,
+                deserialize(
+                    serialize(coord, array(Coordinate)),
+                    array(Coordinate)
+                )
+            )
+        ).toBe(true);
 
-        const locations = [{
-            home: { x: 1, y: 2 },
-            work: { x: 3, y: 4 }
-        }];
+        const locations = [
+            {
+                home: { x: 1, y: 2 },
+                work: { x: 3, y: 4 }
+            }
+        ];
         expect(mirror(locations, array(Locations))).toEqual(locations);
-        expect(leftEqual(locations, deserialize(serialize(locations, array(Locations)), array(Locations)))).toBe(true);
+        expect(
+            leftEqual(
+                locations,
+                deserialize(
+                    serialize(locations, array(Locations)),
+                    array(Locations)
+                )
+            )
+        ).toBe(true);
     });
 
     it("should stay intact with dynamic struct arrays", async () => {
@@ -72,48 +90,52 @@ describe("definitions", async () => {
             return materialize(deserialize(serialized, schema));
         }
 
-        const map = [{
-            locations: [
-                {
-                    name: "Good Pizza",
-                    importance: 9,
-                    coord: { x: 1.234320044517517, y: 2.234149932861328 },
-                    starred: true,
-                    saved_at: new Date("2024-07-25T12:11:00.690Z")
-                },
-                {
-                    name: "Bad Pizza",
-                    importance: -1,
-                    coord: { x: 3.2343199253082275, y: 4.234149932861328 },
+        const map = [
+            {
+                locations: [
+                    {
+                        name: "Good Pizza",
+                        importance: 9,
+                        coord: { x: 1.234320044517517, y: 2.234149932861328 },
+                        starred: true,
+                        saved_at: new Date("2024-07-25T12:11:00.690Z")
+                    },
+                    {
+                        name: "Bad Pizza",
+                        importance: -1,
+                        coord: { x: 3.2343199253082275, y: 4.234149932861328 },
+                        starred: false,
+                        saved_at: new Date("2024-07-25T11:11:00.690Z")
+                    }
+                ],
+                user: "csjh",
+                default: {
+                    name: "Work",
+                    importance: 8,
+                    coord: {
+                        x: 1.234320044517517,
+                        y: 2.234149932861328
+                    },
                     starred: false,
-                    saved_at: new Date("2024-07-25T11:11:00.690Z")
+                    saved_at: new Date("2021-09-01T00:00:00.000Z")
+                },
+                current: {
+                    name: "Home",
+                    importance: 10,
+                    coord: {
+                        x: 3.2343199253082275,
+                        y: 4.234149932861328
+                    },
+                    starred: true,
+                    saved_at: new Date("2009-11-11T00:00:00.000Z")
                 }
-            ],
-            user: "csjh",
-            default: {
-                name: "Work",
-                importance: 8,
-                coord: {
-                    x: 1.234320044517517,
-                    y: 2.234149932861328
-                },
-                starred: false,
-                saved_at: new Date("2021-09-01T00:00:00.000Z")
-            },
-            current: {
-                name: "Home",
-                importance: 10,
-                coord: {
-                    x: 3.2343199253082275,
-                    y: 4.234149932861328
-                },
-                starred: true,
-                saved_at: new Date("2009-11-11T00:00:00.000Z")
             }
-        }];
+        ];
 
         expect(mirror(map, array(Map))).toEqual(map);
-        expect(leftEqual(map, deserialize(serialize(map, array(Map)), array(Map)))).toBe(true);
+        expect(
+            leftEqual(map, deserialize(serialize(map, array(Map)), array(Map)))
+        ).toBe(true);
     });
 
     it("should work as an array", async () => {
@@ -127,6 +149,6 @@ describe("definitions", async () => {
 
         expect(deserialized.map((c) => c.x)).toEqual(coord.map((c) => c.x));
         expect(deserialized.map((c) => c.y)).toEqual(coord.map((c) => c.y));
-        expect(deserialized.every((c) => typeof c === 'object')).toBe(true);
-    })
+        expect(deserialized.every((c) => typeof c === "object")).toBe(true);
+    });
 });
