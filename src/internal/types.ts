@@ -3,19 +3,19 @@ export type Serializer = (data: any) => undefined;
 export type Deserializer = (ptr: number) => unknown;
 
 export interface PestTypeInternal {
-    // id
+    /** id */
     i: number;
-    // number of dynamic fields or depth of array
+    /** number of dynamic fields or depth of array */
     y: number;
-    // element type if array
+    /** element type if array */
     e?: PestTypeInternal;
     // serializer
     // s?: Serializer;
-    // deserializer
+    /** deserializer */
     d?: Deserializer;
-    // fields
+    /** fields */
     f: Record<string, PestTypeInternal>;
-    // sizeof
+    /** sizeof */
     z: number;
 }
 
