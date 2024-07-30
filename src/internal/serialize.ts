@@ -4,9 +4,9 @@ const encoder = new TextEncoder();
 
 export function serialize<T>(
     data: NoInfer<T>,
-    _schema: PestType<T>
+    schema: PestType<T>
 ): Uint8Array {
-    const schema = _schema as unknown as PestTypeInternal;
+    const _schema = schema as unknown as PestTypeInternal;
 
     let uint8 = new Uint8Array(1);
     let dv = new DataView(uint8.buffer);
@@ -130,13 +130,13 @@ export function serialize<T>(
         emit((value << 3) | bytes | sign, 4 - (bytes >>> 1));
     }
 
-    if (schema.e) {
-        encode_s(schema.e.i | (1 << 31));
-        encode(schema.y);
+    if (_schema.e) {
+        encode_s(_schema.e.i | (1 << 31));
+        encode(_schema.y);
     } else {
-        encode_s(schema.i);
+        encode_s(_schema.i);
     }
     while (ptr % 8 !== 0) emit(0);
-    get_serializer(schema)(data);
+    get_serializer(_schema)(data);
     return uint8.subarray(0, ptr);
 }
