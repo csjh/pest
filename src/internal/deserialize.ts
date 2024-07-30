@@ -4,26 +4,14 @@ interface Instance {
     $: number;
 }
 
-const buffer = new ArrayBuffer(1024, { maxByteLength: 1 << 30 });
-let uint8 = new Uint8Array(buffer);
-let ptr = 0;
-let dv = new DataView(buffer);
 const decoder = new TextDecoder();
 
 export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
-    while (ptr % 8 !== 0) ptr++;
-    while (ptr + msg.byteLength > buffer.byteLength) {
-        buffer.resize(buffer.byteLength * 2);
-        uint8 = new Uint8Array(buffer);
-        dv = new DataView(buffer);
-    }
-    uint8.set(msg, ptr);
-    const obj = _deserialize(ptr, schema as unknown as PestTypeInternal);
-    ptr += msg.byteLength;
-    return obj as T;
-}
+    const internal = schema as unknown as PestTypeInternal;
+    const buffer = msg.buffer;
+    const dv = new DataView(buffer);
+    let ptr = 0;
 
-function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
     // prettier-ignore
     const definitions = [
         (ptr) => dv.getInt8(ptr),  (ptr) => dv.getInt16(ptr, true),  (ptr) => dv.getInt32(ptr, true),  (ptr) => dv.getBigInt64(ptr, true),
@@ -86,20 +74,19 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
         });
     }
 
-    function get_deserializer(ty: PestTypeInternal) {
+    function get_deserializer(ty: PestTypeInternal): Deserializer {
         if (ty.i < definitions.length) return definitions[ty.i];
-        if (ty.d) return ty.d;
-        if (ty.e) return (ty.d = (ptr) => PestArray(ptr, ty.y, ty.e!));
+        if (ty.e) return (ptr) => PestArray(ptr, ty.y, ty.e!);
 
         // values start after the offset table
         let pos = ty.y ? (ty.y - 1) * 4 : 0;
         let dynamics = 0;
 
-        const fn = (ty.d = function (this: Instance, ptr: number) {
+        const fn = function (this: Instance, ptr: number) {
             // @ts-expect-error technically doesn't have right signature
-            if (!this) return new ty.d(ptr);
+            if (!this) return new fn(ptr);
             Object.defineProperty(this, "$", { value: ptr });
-        });
+        };
 
         for (const [name, field] of Object.entries(ty.f).sort(
             (a, b) => b[1].z - a[1].z
@@ -133,7 +120,7 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
             }
         }
 
-        return ty.d;
+        return fn;
     }
 
     function decode() {
@@ -160,20 +147,20 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
     const type_id = decode_s();
     if (type_id < 0) {
         const depth = decode();
-        if (!schema.e) {
+        if (!internal.e) {
             throw new Error("Expected array type");
         }
-        if (depth !== schema.y) {
+        if (depth !== internal.y) {
             throw new Error("Depth mismatch");
         }
-        if ((type_id & 0x7fffffff) !== schema.e.i) {
+        if ((type_id & 0x7fffffff) !== internal.e.i) {
             throw new Error("Type mismatch");
         }
-    } else if (type_id !== schema.i) {
+    } else if (type_id !== internal.i) {
         throw new Error("Type mismatch");
     }
     while (ptr % 8 !== 0) ptr++;
-    return get_deserializer(schema)(ptr);
+    return get_deserializer(internal)(ptr) as T;
 }
 
 /*

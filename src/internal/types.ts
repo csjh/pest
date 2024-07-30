@@ -9,10 +9,6 @@ export interface PestTypeInternal {
     y: number;
     /** element type if array */
     e?: PestTypeInternal;
-    // serializer
-    // s?: Serializer;
-    /** deserializer */
-    d?: Deserializer;
     /** fields */
     f: Record<string, PestTypeInternal>;
     /** sizeof */
@@ -21,8 +17,8 @@ export interface PestTypeInternal {
 
 export type Unwrap<T> = T extends PestType<infer U>
     ? Unwrap<U>
-    : T extends Date
-    ? Date
+    : T extends Date | ArrayBufferView
+    ? T
     : T extends (infer U)[]
     ? Unwrap<U>[]
     : T extends Record<any, any>
