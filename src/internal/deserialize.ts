@@ -60,12 +60,11 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                     }
                 }
                 // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
-                return Array.prototype[prop]?.bind(receiver);
+                return target[prop]?.bind(receiver);
             },
             has(target, prop) {
                 return (
-                    prop in Array.prototype ||
-                    (typeof prop === "string" && !isNaN(+prop) && +prop < len)
+                    prop in target || (typeof prop === "string" && +prop < len)
                 );
             },
             getPrototypeOf() {
