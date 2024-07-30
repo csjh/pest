@@ -28,18 +28,18 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (ty.i < 10 && depth == 1) {
             // align to ty.z bytes
             ptr += -ptr & (ty.z - 1);
-            // prettier-ignore
-            return new (
-                ty.i === 0? Int8Array :
-                ty.i === 1? Int16Array :
-                ty.i === 2? Int32Array :
-                ty.i === 3? BigInt64Array :
-                ty.i === 4? Uint8Array :
-                ty.i === 5? Uint16Array :
-                ty.i === 6? Uint32Array :
-                ty.i === 7? BigUint64Array :
-                ty.i === 8? Float32Array :
-                            Float64Array)(buffer, ptr, len);
+            return new [
+                Int8Array,
+                Int16Array,
+                Int32Array,
+                BigInt64Array,
+                Uint8Array,
+                Uint16Array,
+                Uint32Array,
+                BigUint64Array,
+                Float32Array,
+                Float64Array
+            ][ty.i](buffer, ptr, len);
         }
 
         return new Proxy([], {
