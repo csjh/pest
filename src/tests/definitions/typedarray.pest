@@ -1,0 +1,4 @@
+interface HorseRace {
+    horses: string[];
+    times: f64[];
+}

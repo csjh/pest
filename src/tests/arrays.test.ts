@@ -21,6 +21,15 @@ function leftEqual(left: unknown, right: unknown) {
         return true;
     }
 
+    if (ArrayBuffer.isView(left)) {
+        if (!ArrayBuffer.isView(right)) return false;
+        if (left.length !== right.length) return false;
+        for (let i = 0; i < left.length; i++) {
+            if (left[i] !== right[i]) return false;
+        }
+        return true;
+    }
+
     if (left === null || right === null) {
         return left === right;
     }
@@ -546,6 +555,76 @@ describe("nested arrays", async () => {
         );
         expect(deserialized.flat().every((c) => typeof c === "object")).toBe(
             true
+        );
+    });
+});
+
+describe("unnested typed arrays", async () => {
+    it("should stay intact with typed arrays", async () => {
+        const { serialize, deserialize, HorseRace } = await getSingleModule(
+            new URL("./definitions/typedarray.pest", import.meta.url)
+        );
+
+        function mirror(data: unknown, schema: PestType<unknown>) {
+            const serialized = serialize(data, schema);
+            return materialize(deserialize(serialized, schema));
+        }
+
+        const races = {
+            horses: ["Horsey"],
+            times: new Float64Array([1.0])
+        };
+        expect(mirror(races, HorseRace)).toEqual(races);
+        expect(
+            leftEqual(
+                races,
+                deserialize(serialize(races, HorseRace), HorseRace)
+            )
+        ).toBe(true);
+
+        const races2 = [
+            {
+                horses: ["Horsey", "McHorseface", "Horsea", "Horseb"],
+                times: new Float64Array([1.0, 2.0, 3.0, 4.0])
+            },
+            {
+                horses: ["Horsey", "McHorseface", "Horsea", "Horseb"],
+                times: new Float64Array([1.0, 2.0, 3.0, 4.0])
+            }
+        ];
+        expect(mirror(races2, array(HorseRace))).toEqual(races2);
+        expect(
+            leftEqual(
+                races2,
+                deserialize(
+                    serialize(races2, array(HorseRace)),
+                    array(HorseRace)
+                )
+            )
+        ).toBe(true);
+    });
+
+    it("should work as a typedarray", async () => {
+        const { serialize, deserialize, HorseRace } = await getSingleModule(
+            new URL("./definitions/typedarray.pest", import.meta.url)
+        );
+
+        const races = [
+            {
+                horses: ["Horsey", "McHorseface", "Horsea", "Horseb"],
+                times: new Float64Array([1.0, 2.0, 3.0, 4.0])
+            },
+            {
+                horses: ["Horsey", "McHorseface", "Horsea", "Horseb"],
+                times: new Float64Array([1.0, 2.0, 3.0, 4.0])
+            }
+        ];
+        const serialized = serialize(races, array(HorseRace));
+        const deserialized = deserialize(serialized, array(HorseRace));
+
+        expect(deserialized[0].times).toBeInstanceOf(Float64Array);
+        expect(deserialized[0].times.map((c) => c + 1)).toEqual(
+            deserialized[0].times.map((c) => c + 1)
         );
     });
 });

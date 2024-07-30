@@ -11,6 +11,7 @@ let dv = new DataView(buffer);
 const decoder = new TextDecoder();
 
 export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
+    while (ptr % 8 !== 0) ptr++;
     while (ptr + msg.byteLength > buffer.byteLength) {
         buffer.resize(buffer.byteLength * 2);
         uint8 = new Uint8Array(buffer);
@@ -35,18 +36,35 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
 
     function PestArray(ptr: number, depth: number, ty: PestTypeInternal) {
         const len = dv.getUint32(ptr, true);
-        // prettier-ignore
+        ptr += 4;
+        if (ty.i < 10 && depth == 1) {
+            // align to ty.z bytes
+            ptr += -ptr & (ty.z - 1);
+            // prettier-ignore
+            return new (
+                ty.i === 0? Int8Array :
+                ty.i === 1? Int16Array :
+                ty.i === 2? Int32Array :
+                ty.i === 3? BigInt64Array :
+                ty.i === 4? Uint8Array :
+                ty.i === 5? Uint16Array :
+                ty.i === 6? Uint32Array :
+                ty.i === 7? BigUint64Array :
+                ty.i === 8? Float32Array :
+                            Float64Array)(buffer, ptr, len);
+        }
+
         return new Proxy([], {
             get(target, prop, receiver) {
                 if (prop === "length") {
                     return len;
                 } else if (typeof prop === "string" && !isNaN(+prop)) {
                     // base + length +
-                    const addr = ptr + 4 + (depth === 1 && ty.z
-                        // + sizeof(type) * index
-                        ? +prop * ty.z
-                        // + offset_table + offset
-                        : len * 4 + dv.getUint32(ptr + 4 + +prop * 4, true));
+                    const addr =
+                        ptr +
+                        (depth === 1 && ty.z
+                            ? +prop * ty.z
+                            : len * 4 + dv.getUint32(ptr + +prop * 4, true));
                     if (depth === 1) {
                         return get_deserializer(ty)(addr);
                     } else {
@@ -57,7 +75,10 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
                 return Array.prototype[prop]?.bind(receiver);
             },
             has(target, prop) {
-                return prop in Array.prototype || (typeof prop === "string" && !isNaN(+prop) && +prop < len);
+                return (
+                    prop in Array.prototype ||
+                    (typeof prop === "string" && !isNaN(+prop) && +prop < len)
+                );
             },
             getPrototypeOf() {
                 return Array.prototype;
@@ -151,8 +172,7 @@ function _deserialize(ptr: number, schema: PestTypeInternal): unknown {
     } else if (type_id !== schema.i) {
         throw new Error("Type mismatch");
     }
-    // ptr += -ptr & 15;
-    // while (ptr % 16 !== 0) ptr++;
+    while (ptr % 8 !== 0) ptr++;
     return get_deserializer(schema)(ptr);
 }
 

@@ -43,7 +43,7 @@ export function serialize<T>(
     function get_serializer(ty: PestTypeInternal): Serializer {
         if (ty.i < definitions.length) return definitions[ty.i];
         if (ty.e) {
-            return ty.e.y || ty.y > 1
+            return !ty.e.z || ty.y > 1
                 ? (data) => {
                       emit(data.length, 4);
                       const start = ptr;
@@ -62,6 +62,8 @@ export function serialize<T>(
                   }
                 : (data) => {
                       emit(data.length, 4);
+                      // align to ty.e.z bytes
+                      if (ty.e!.i < 10) ptr += -ptr & (ty.e!.z - 1);
                       for (let i = 0; i < data.length; i++) {
                           get_serializer(ty.e!)(data[i]);
                       }
@@ -134,7 +136,7 @@ export function serialize<T>(
     } else {
         encode_s(schema.i);
     }
-    // while (ptr % 16 !== 0) emit(0);
+    while (ptr % 8 !== 0) emit(0);
     get_serializer(schema)(data);
     return uint8.subarray(0, ptr);
 }
