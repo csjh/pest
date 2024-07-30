@@ -1,9 +1,14 @@
-import { PestType, PestTypeInternal, Serializer } from "./types.js";
+import {
+    AcceptBroad,
+    PestType,
+    PestTypeInternal,
+    Serializer
+} from "./types.js";
 
 const encoder = new TextEncoder();
 
 export function serialize<T>(
-    data: NoInfer<T>,
+    data: NoInfer<AcceptBroad<T>>,
     schema: PestType<T>
 ): Uint8Array {
     const _schema = schema as unknown as PestTypeInternal;

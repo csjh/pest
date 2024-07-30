@@ -94,7 +94,10 @@ declare const f64: number;
                     return `
 export interface ${name} extends Unwrap<{ ${Object.entries(members)
                         .map(
-                            ([k, v]) => `${k}: ${v.type}${"[]".repeat(v.depth)}`
+                            ([k, v]) =>
+                                `${k}: ${fixType(
+                                    v.type + "[]".repeat(v.depth)
+                                )}`
                         )
                         .join(", ")} }> {};
 export declare const ${name}: PestType<${name}>;`;
@@ -172,4 +175,18 @@ function parse(code: string): Record<string, Record<string, Type>> {
     }
 
     return module;
+}
+
+function fixType(type: string): string {
+    return type
+        .replaceAll("u8[]", "Uint8Array")
+        .replaceAll("u16[]", "Uint16Array")
+        .replaceAll("u32[]", "Uint32Array")
+        .replaceAll("u64[]", "BigUint64Array")
+        .replaceAll("i8[]", "Int8Array")
+        .replaceAll("i16[]", "Int16Array")
+        .replaceAll("i32[]", "Int32Array")
+        .replaceAll("i64[]", "BigInt64Array")
+        .replaceAll("f32[]", "Float32Array")
+        .replaceAll("f64[]", "Float64Array");
 }

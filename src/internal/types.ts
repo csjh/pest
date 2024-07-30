@@ -25,6 +25,18 @@ export type Unwrap<T> = T extends PestType<infer U>
     ? { [K in keyof T]: Unwrap<T[K]> }
     : T;
 
+export type AcceptBroad<T> = T extends Date
+    ? T
+    : T extends ArrayLike<number>
+    ? ArrayLike<number>
+    : T extends ArrayLike<bigint>
+    ? ArrayLike<bigint>
+    : T extends (infer U)[]
+    ? AcceptBroad<U>[]
+    : T extends Record<any, any>
+    ? { [K in keyof T]: AcceptBroad<T[K]> }
+    : T;
+
 declare const type: unique symbol;
 export interface PestType<T> {
     readonly [type]: T;
