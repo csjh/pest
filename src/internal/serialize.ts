@@ -43,7 +43,7 @@ export function serialize<T>(
     function get_serializer(ty: PestTypeInternal): Serializer {
         if (ty.i < definitions.length) return definitions[ty.i];
         if (ty.e) {
-            return ty.e.y
+            return ty.e.y || ty.y > 1
                 ? (data) => {
                       emit(data.length, 4);
                       const start = ptr;
@@ -55,7 +55,9 @@ export function serialize<T>(
                               ptr - 4 * data.length - start,
                               true
                           );
-                          get_serializer(ty.e!)(data[i]);
+                          get_serializer(
+                              ty.y == 1 ? ty.e! : { ...ty, y: ty.y - 1 }
+                          )(data[i]);
                       }
                   }
                 : (data) => {
