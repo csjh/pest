@@ -52,14 +52,24 @@ describe("definitions", async () => {
 
         const coord = { x: 1, y: 2 };
         expect(mirror(coord, Coordinate)).toEqual(coord);
-        expect(leftEqual(coord, deserialize(serialize(coord, Coordinate), Coordinate))).toBe(true);
+        expect(
+            leftEqual(
+                coord,
+                deserialize(serialize(coord, Coordinate), Coordinate)
+            )
+        ).toBe(true);
 
         const locations = {
             home: { x: 1, y: 2 },
             work: { x: 3, y: 4 }
         };
         expect(mirror(locations, Locations)).toEqual(locations);
-        expect(leftEqual(locations, deserialize(serialize(locations, Locations), Locations))).toBe(true);
+        expect(
+            leftEqual(
+                locations,
+                deserialize(serialize(locations, Locations), Locations)
+            )
+        ).toBe(true);
     });
 
     it("should stay intact with dynamic structs", async () => {
@@ -113,6 +123,8 @@ describe("definitions", async () => {
         };
 
         expect(mirror(map, Map)).toEqual(map);
-        expect(leftEqual(map, deserialize(serialize(map, Map), Map))).toBe(true);
+        expect(leftEqual(map, deserialize(serialize(map, Map), Map))).toBe(
+            true
+        );
     });
 });
