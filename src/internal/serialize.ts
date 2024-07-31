@@ -13,40 +13,34 @@ export function serialize<T>(
 ): Uint8Array {
     const _schema = schema as unknown as PestTypeInternal;
 
-    let uint8 = new Uint8Array(1);
+    let uint8 = new Uint8Array(8);
     let dv = new DataView(uint8.buffer);
-    let ptr = 0;
-
-    function num(ty: string, size: number): Serializer {
-        return (data) => {
-            reserve(size);
-            // @ts-expect-error wah wah
-            dv[`set${ty}${size * 8}`](ptr, data, true);
-            ptr += size;
-        };
-    }
+    let ptr = 8;
 
     // prettier-ignore
     const definitions = [
-        num("Int", 1), num("Int", 2), num("Int", 4), num("BigInt", 8),
-        num("Uint", 1), num("Uint", 2), num("Uint", 4), num("BigUint", 8),
-        num("Float", 4), num("Float", 8),
-        num("Uint", 1),
-        num("Float", 8),
+        (data) => dv.setInt8(ptr, data),  (data) => dv.setInt16(ptr, data, true),  (data) => dv.setInt32(ptr, data, true),  (data) => dv.setBigInt64(ptr, data, true),
+        (data) => dv.setUint8(ptr, data), (data) => dv.setUint16(ptr, data, true), (data) => dv.setUint32(ptr, data, true), (data) => dv.setBigUint64(ptr, data, true),
+        (data) => dv.setFloat32(ptr, data, true), (data) => dv.setFloat64(ptr, data, true),
+        (data) => dv.setUint8(ptr, data? 1 : 0),
+        (data) => dv.setFloat64(ptr, data, true),
         (data) => {
             // i think this is enough for utf-16
             reserve(4 + data.length * 2);
-            const length = encoder.encodeInto(
-                data,
-                uint8.subarray(ptr + 4)
-            ).written;
+            const length = encoder.encodeInto(data, uint8.subarray(ptr + 4)).written;
             dv.setUint32(ptr, length, true);
             ptr += 4 + length;
         }
     ] satisfies Serializer[];
 
     function get_serializer(ty: PestTypeInternal): Serializer {
-        if (ty.i < definitions.length) return definitions[ty.i];
+        if (ty.i < definitions.length) {
+            return (data) => {
+                reserve(ty.z);
+                definitions[ty.i](data);
+                ptr += ty.z;
+            };
+        }
         if (isNaN(ty.i)) {
             return !ty.f.e.z
                 ? (data) => {
@@ -120,26 +114,12 @@ export function serialize<T>(
         }
     }
 
-    function encode(value: number) {
-        const bytes = ((Math.clz32(value) - 2) / 8) >>> 0;
-        emit(((value << 2) | bytes) >>> 0, 4 - bytes);
-    }
-
-    function encode_s(value: number) {
-        const sign = value >>> 31;
-        value &= 0x7fffffff;
-
-        const bytes = ((Math.clz32(value) - 3) >>> 2) & 0b110;
-        emit((value << 3) | bytes | sign, 4 - (bytes >>> 1));
-    }
-
     if (isNaN(_schema.i)) {
-        encode_s(_schema.f.m.i | (1 << 31));
-        encode(_schema.y);
+        dv.setInt32(0, _schema.f.m.i | (1 << 31), true);
+        dv.setUint32(4, _schema.y, true);
     } else {
-        encode_s(_schema.i);
+        dv.setInt32(0, _schema.i, true);
     }
-    while (ptr % 8 !== 0) emit(0);
     get_serializer(_schema)(data);
     return uint8.subarray(0, ptr);
 }

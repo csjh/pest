@@ -1,5 +1,4 @@
-// return undefined instead of void to make sure there's no accidental returns
-export type Serializer = (data: any) => undefined;
+export type Serializer = (data: any) => void;
 export type Deserializer = (ptr: number) => unknown;
 
 export interface PestTypeInternal {

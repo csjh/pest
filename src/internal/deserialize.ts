@@ -10,7 +10,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     const internal = schema as unknown as PestTypeInternal;
     const buffer = msg.buffer;
     const dv = new DataView(buffer);
-    let ptr = 0;
+    let ptr = 8;
 
     // prettier-ignore
     const definitions = [
@@ -117,30 +117,9 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         return fn;
     }
 
-    function decode() {
-        let n = dv.getUint32(ptr, true);
-        let bytes = n & 0b11;
-        ptr += 4 - bytes;
-        bytes <<= 3;
-        n = (n << bytes) >>> bytes;
-        n >>>= 2;
-        return n;
-    }
-
-    function decode_s() {
-        let n = dv.getUint32(ptr, true);
-        const sign = n << 31;
-        let bytes = (n & 0b110) >>> 1;
-        ptr += 4 - bytes;
-        bytes <<= 3;
-        n = (n << bytes) >>> bytes;
-        n >>>= 3;
-        return sign | n;
-    }
-
-    const type_id = decode_s();
+    const type_id = dv.getInt32(0, true);
+    const depth = dv.getUint32(4, true);
     if (type_id < 0) {
-        const depth = decode();
         if (!isNaN(internal.i)) {
             throw new Error("Expected array type");
         }
@@ -153,7 +132,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     } else if (type_id !== internal.i) {
         throw new Error("Type mismatch");
     }
-    while (ptr % 8 !== 0) ptr++;
+    ptr = 8;
     return get_deserializer(internal)(ptr) as T;
 }
 
