@@ -132,7 +132,6 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     } else if (type_id !== internal.i) {
         throw new Error("Type mismatch");
     }
-    ptr = 8;
     return get_deserializer(internal)(ptr) as T;
 }
 
