@@ -139,7 +139,6 @@ export function serialize<T>(
     } else {
         dv.setInt32(0, _schema.i, true);
     }
-    // @ts-expect-error something about excessively deep type instantiation
     get_serializer(_schema)(data);
     return uint8.subarray(0, ptr);
 }

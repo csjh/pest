@@ -28,8 +28,6 @@ export type Unwrap<T> = T extends PestType<infer U>
 
 export type AcceptBroad<T> = T extends Date
     ? T
-    : T extends infer U | null
-    ? AcceptBroad<U> | null | undefined
     : T extends ArrayLike<number>
     ? ArrayLike<number>
     : T extends ArrayLike<bigint>
