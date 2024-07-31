@@ -30,7 +30,9 @@ export function serialize<T>(
             const length = encoder.encodeInto(data, uint8.subarray(ptr + 4)).written;
             dv.setUint32(ptr, length, true);
             ptr += 4 + length;
-        }
+        },
+        // serialized as string
+        (data) => definitions[12](`${data.flags}\0${data.source}`)
     ] satisfies Serializer[];
 
     function get_serializer(ty: PestTypeInternal): Serializer {

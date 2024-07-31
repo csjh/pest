@@ -13,6 +13,7 @@ export const f64 = { i: 9, z: 8 } as PestTypeInternal;
 export const boolean = { i: 10, z: 1 } as PestTypeInternal;
 export const Date = { i: 11, z: 8 } as PestTypeInternal;
 export const string = { i: 12, z: 0 } as PestTypeInternal;
+export const RegExp = { i: 13, z: 0 } as PestTypeInternal;
 
 export function array<T>(e: PestType<T>, depth: number = 1): PestType<T[]> {
     return (depth

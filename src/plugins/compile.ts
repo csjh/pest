@@ -23,7 +23,8 @@ export function compile(code: string, opts: CompileOptions): string {
             f64: 8,
             boolean: 1,
             Date: 8,
-            string: 0
+            string: 0,
+            RegExp: 0,
         };
         const primitives = Object.keys(sizes).length;
 
@@ -51,7 +52,7 @@ export function compile(code: string, opts: CompileOptions): string {
 
         return (
             `export { serialize, deserialize } from "pest/internal";
-import { array, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string } from "pest/internal";
+import { array, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp } from "pest/internal";
 ` +
             Object.entries(definitions)
                 .map(([name, members], i) => {

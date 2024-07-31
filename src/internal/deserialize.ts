@@ -19,8 +19,12 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         (ptr) => dv.getFloat32(ptr, true), (ptr) => dv.getFloat64(ptr, true),
         (ptr) => dv.getUint8(ptr) !== 0,
         (ptr) => new Date(dv.getFloat64(ptr, true)),
-        (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)))
-    ] satisfies Deserializer[];
+        (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true))),
+        ((ptr) => {
+            const [flags, source] = definitions[12](ptr).split('\0', 2);
+            return new RegExp(source, flags);
+        }) as Deserializer,
+    ] as const satisfies Deserializer[];
 
     function PestArray(ptr: number, ty: PestTypeInternal) {
         const len = dv.getUint32(ptr, true);
