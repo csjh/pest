@@ -69,11 +69,10 @@ export function serialize<T>(
                   };
         }
 
-        return ty.y
-            ? (data) => {
+        return (data) => {
                   const start = ptr;
                   let first_dyn = 0;
-                  ptr += (ty.y - 1) * 4;
+            ptr += ty.y + ty.u;
                   let dynamics = 0;
                   for (const [name, type] of Object.entries(ty.f).sort(
                       (a, b) => b[1].z - a[1].z
@@ -91,11 +90,6 @@ export function serialize<T>(
                           dynamics++;
                       }
                       get_serializer(type)(data[name]);
-                  }
-              }
-            : (data) => {
-                  for (const name in ty.f) {
-                      get_serializer(ty.f[name])(data[name]);
                   }
               };
     }
@@ -122,6 +116,7 @@ export function serialize<T>(
     } else {
         dv.setInt32(0, _schema.i, true);
     }
+    // @ts-expect-error something about excessively deep type instantiation
     get_serializer(_schema)(data);
     return uint8.subarray(0, ptr);
 }

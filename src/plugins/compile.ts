@@ -56,13 +56,13 @@ import { array, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, s
 ` +
             Object.entries(definitions)
                 .map(([name, members], i) => {
+                    const num_dynamics = Object.values(members).filter(
+                        (v) => v.depth || sizes[v.type] === 0
+                    ).length;
                     return `
 export const ${name} = {
     i: ${i + primitives},
-    y: ${
-        Object.values(members).filter((v) => v.depth || sizes[v.type] === 0)
-            .length
-    },
+    y: ${num_dynamics && (num_dynamics - 1) * 4},
     f: { ${Object.entries(members)
         .map(
             ([k, v]) =>

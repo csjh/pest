@@ -78,7 +78,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (isNaN(ty.i)) return (ptr) => PestArray(ptr, ty.f.e!);
 
         // values start after the offset table
-        let pos = ty.y && (ty.y - 1) * 4;
+        let pos = ty.y;
         let dynamics = 0;
 
         function fn(this: Instance, ptr: number) {

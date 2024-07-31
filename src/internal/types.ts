@@ -4,7 +4,7 @@ export type Deserializer = (ptr: number) => unknown;
 export interface PestTypeInternal {
     /** id */
     i: number;
-    /** number of dynamic fields or depth of array */
+    /** length of dynamic offset table or depth of array */
     y: number;
     /** fields; if array, only e (the element type, possibly a nested array), or m (the element type, unnested) is present */
     f: Record<string, PestTypeInternal>;
