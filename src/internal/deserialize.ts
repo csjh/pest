@@ -78,14 +78,14 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (ty.e) return (ptr) => PestArray(ptr, ty.y, ty.e!);
 
         // values start after the offset table
-        let pos = ty.y ? (ty.y - 1) * 4 : 0;
+        let pos = ty.y && (ty.y - 1) * 4;
         let dynamics = 0;
 
-        const fn = function (this: Instance, ptr: number) {
+        function fn(this: Instance, ptr: number) {
             // @ts-expect-error technically doesn't have right signature
             if (!this) return new fn(ptr);
             Object.defineProperty(this, "$", { value: ptr });
-        };
+        }
 
         for (const [name, field] of Object.entries(ty.f).sort(
             (a, b) => b[1].z - a[1].z
@@ -112,11 +112,9 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                     enumerable: true
                 });
             }
-            if (field.z) {
-                pos += field.z;
-            } else {
-                dynamics++;
-            }
+            pos += field.z;
+            // @ts-expect-error complain to brendan eich
+            dynamics += !field.z;
         }
 
         return fn;
