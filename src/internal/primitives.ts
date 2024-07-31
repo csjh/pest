@@ -14,10 +14,13 @@ export const boolean = { i: 10, z: 1 } as PestTypeInternal;
 export const Date = { i: 11, z: 8 } as PestTypeInternal;
 export const string = { i: 12, z: 0 } as PestTypeInternal;
 
-export function array<T>(ty: PestType<T>, depth: number = 1): PestType<T[]> {
-    return {
-        i: Infinity,
-        y: depth,
-        e: ty
-    } as unknown as PestType<T[]>;
+export function array<T>(e: PestType<T>, depth: number = 1): PestType<T[]> {
+    return (depth
+        ? {
+              i: NaN,
+              y: depth,
+              f: { e: array(e, depth - 1), m: e },
+              z: 0
+          }
+        : e) as unknown as PestType<T[]>;
 }

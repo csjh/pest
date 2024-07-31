@@ -22,10 +22,10 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true)))
     ] satisfies Deserializer[];
 
-    function PestArray(ptr: number, depth: number, ty: PestTypeInternal) {
+    function PestArray(ptr: number, ty: PestTypeInternal) {
         const len = dv.getUint32(ptr, true);
         ptr += 4;
-        if (ty.i < 10 && depth == 1) {
+        if (ty.i < 10) {
             // align to ty.z bytes
             ptr += -ptr & (ty.z - 1);
             return new [
@@ -42,6 +42,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
             ][ty.i](buffer, ptr, len);
         }
 
+        const deserializer = get_deserializer(ty);
         return new Proxy([], {
             get(target, prop, receiver) {
                 if (prop === "length") {
@@ -50,14 +51,10 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                     // base + length +
                     const addr =
                         ptr +
-                        (depth === 1 && ty.z
+                        (ty.z
                             ? +prop * ty.z
                             : len * 4 + dv.getUint32(ptr + +prop * 4, true));
-                    if (depth === 1) {
-                        return get_deserializer(ty)(addr);
-                    } else {
-                        return PestArray(addr, depth - 1, ty);
-                    }
+                    return deserializer(addr);
                 }
                 // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
                 return target[prop]?.bind(receiver);
@@ -75,7 +72,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
 
     function get_deserializer(ty: PestTypeInternal): Deserializer {
         if (ty.i < definitions.length) return definitions[ty.i];
-        if (ty.e) return (ptr) => PestArray(ptr, ty.y, ty.e!);
+        if (isNaN(ty.i)) return (ptr) => PestArray(ptr, ty.f.e!);
 
         // values start after the offset table
         let pos = ty.y && (ty.y - 1) * 4;
@@ -144,13 +141,13 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     const type_id = decode_s();
     if (type_id < 0) {
         const depth = decode();
-        if (!internal.e) {
+        if (!isNaN(internal.i)) {
             throw new Error("Expected array type");
         }
         if (depth !== internal.y) {
             throw new Error("Depth mismatch");
         }
-        if ((type_id & 0x7fffffff) !== internal.e.i) {
+        if ((type_id & 0x7fffffff) !== internal.f.m.i) {
             throw new Error("Type mismatch");
         }
     } else if (type_id !== internal.i) {

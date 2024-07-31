@@ -7,9 +7,7 @@ export interface PestTypeInternal {
     i: number;
     /** number of dynamic fields or depth of array */
     y: number;
-    /** element type if array */
-    e?: PestTypeInternal;
-    /** fields */
+    /** fields; if array, only e (the element type, possibly a nested array), or m (the element type, unnested) is present */
     f: Record<string, PestTypeInternal>;
     /** sizeof */
     z: number;
