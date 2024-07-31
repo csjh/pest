@@ -52,13 +52,12 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                 if (prop === "length") {
                     return len;
                 } else if (typeof prop === "string" && !isNaN(+prop)) {
-                    // base + length +
-                    const addr =
+                    return deserializer(
                         ptr +
-                        (ty.z
-                            ? +prop * ty.z
-                            : len * 4 + dv.getUint32(ptr + +prop * 4, true));
-                    return deserializer(addr);
+                            (ty.z
+                                ? +prop * ty.z
+                                : len * 4 + dv.getUint32(ptr + +prop * 4, true))
+                    );
                 }
                 // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
                 return target[prop]?.bind(receiver);
