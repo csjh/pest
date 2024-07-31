@@ -20,8 +20,14 @@ export function array<T>(e: PestType<T>, depth: number = 1): PestType<T[]> {
         ? {
               i: NaN,
               y: depth,
+              // @ts-expect-error cry
+              u: e.n,
               f: { e: array(e, depth - 1), m: e },
               z: 0
           }
         : e) as unknown as PestType<T[]>;
+}
+
+export function nullable<T>(t: PestType<T>): PestType<T | null> {
+    return { ...t, n: 1 } as unknown as PestType<T | null>;
 }

@@ -6,10 +6,14 @@ export interface PestTypeInternal {
     i: number;
     /** length of dynamic offset table or depth of array */
     y: number;
+    /** length of null offset table */
+    u: number;
     /** fields; if array, only e (the element type, possibly a nested array), or m (the element type, unnested) is present */
     f: Record<string, PestTypeInternal>;
     /** sizeof */
     z: number;
+    /** whether or not it can be null */
+    n?: 1;
 }
 
 export type Unwrap<T> = T extends PestType<infer U>
@@ -24,6 +28,8 @@ export type Unwrap<T> = T extends PestType<infer U>
 
 export type AcceptBroad<T> = T extends Date
     ? T
+    : T extends infer U | null
+    ? AcceptBroad<U> | null | undefined
     : T extends ArrayLike<number>
     ? ArrayLike<number>
     : T extends ArrayLike<bigint>

@@ -29,7 +29,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     function PestArray(ptr: number, ty: PestTypeInternal) {
         const len = dv.getUint32(ptr, true);
         ptr += 4;
-        if (ty.i < 10) {
+        if (ty.i < 10 && !ty.n) {
             // align to ty.z bytes
             ptr += -ptr & (ty.z - 1);
             return new [
@@ -52,8 +52,16 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                 if (prop === "length") {
                     return len;
                 } else if (typeof prop === "string" && !isNaN(+prop)) {
+                    if (
+                        ty.n &&
+                        msg[ptr + (ty.z ? 0 : len * 4) + (+prop >>> 3)] &
+                            (1 << (+prop & 7))
+                    )
+                        return null;
+
                     return deserializer(
                         ptr +
+                            (ty.n ? (len + 7) >>> 3 : 0) +
                             (ty.z
                                 ? +prop * ty.z
                                 : len * 4 + dv.getUint32(ptr + +prop * 4, true))
@@ -78,8 +86,9 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (isNaN(ty.i)) return (ptr) => PestArray(ptr, ty.f.e!);
 
         // values start after the offset table
-        let pos = ty.y;
+        let pos = ty.y + ty.u;
         let dynamics = 0;
+        let nulls = 0;
 
         function fn(this: Instance, ptr: number) {
             // @ts-expect-error technically doesn't have right signature
@@ -91,11 +100,20 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
             (a, b) => b[1].z - a[1].z
         )) {
             const deserializer = get_deserializer(field);
+            // make sure the closures capture their own values
             const posx = pos;
+            const nullsx = nulls;
             if (!ty.z && dynamics !== 0) {
                 const table_offset = (dynamics - 1) * 4;
                 Object.defineProperty(fn.prototype, name, {
                     get(this: Instance) {
+                        if (
+                            field.n &&
+                            msg[this.$ + ty.y + (nullsx >>> 3)] &
+                                (1 << (nullsx & 7))
+                        )
+                            return null;
+
                         return deserializer(
                             this.$! +
                                 posx +
@@ -107,6 +125,13 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
             } else {
                 Object.defineProperty(fn.prototype, name, {
                     get(this: Instance) {
+                        if (
+                            field.n &&
+                            msg[this.$ + ty.y + (nullsx >>> 3)] &
+                                (1 << (nullsx & 7))
+                        )
+                            return null;
+
                         return deserializer(this.$! + posx);
                     },
                     enumerable: true
@@ -115,6 +140,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
             pos += field.z;
             // @ts-expect-error complain to brendan eich
             dynamics += !field.z;
+            if (field.n) nulls++;
         }
 
         return fn;

@@ -17,3 +17,10 @@ interface Map {
     default: SavedLocation;
     current: SavedLocation;
 }
+
+interface MapSketchyLocations {
+    locations: SavedLocation?[]?;
+    user: string;
+    default: SavedLocation;
+    current: SavedLocation?;
+}

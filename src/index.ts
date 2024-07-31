@@ -11,4 +11,4 @@ export function materialize<T>(data: T): T {
     return obj as T;
 }
 
-export { array } from "./internal/primitives.js";
+export { array, nullable } from "./internal/primitives.js";

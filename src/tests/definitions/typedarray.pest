@@ -2,3 +2,8 @@ interface HorseRace {
     horses: string[];
     times: f64[];
 }
+
+interface HorseRaceSomeHorsesDied {
+    horses: string[];
+    times: f64?[];
+}

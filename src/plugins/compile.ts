@@ -24,50 +24,56 @@ export function compile(code: string, opts: CompileOptions): string {
             boolean: 1,
             Date: 8,
             string: 0,
-            RegExp: 0,
+            RegExp: 0
         };
         const primitives = Object.keys(sizes).length;
 
         for (const [name, members] of Object.entries(definitions)) {
             let size = 0;
-            for (const member of Object.values(members)) {
-                if (!member.depth) {
-                    if (!(member.type in sizes)) {
+            let nulls = 0;
+            for (const maybenull_member of Object.values(members)) {
+                const member = unnull(maybenull_member);
+                if (member.type !== "array") {
+                    if (!(member.inner in sizes)) {
                         throw new Error(
-                            `Type ${name} must be defined before type ${member.type}`
+                            `Type ${name} must be defined before type ${member.inner}`
                         );
                     }
-                    if (!sizes[member.type]) {
+                    if (!sizes[member.inner]) {
                         size = 0;
                         break;
                     }
-                    size += sizes[member.type];
+                    size += sizes[member.inner];
+                    nulls += maybenull_member.type === "nullable" ? 1 : 0;
                 } else {
                     size = 0;
                     break;
                 }
             }
-            sizes[name] = size;
+            sizes[name] = size + ((nulls + 7) >>> 3);
         }
 
         return (
             `export { serialize, deserialize } from "pest/internal";
-import { array, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp } from "pest/internal";
+import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp } from "pest/internal";
 ` +
             Object.entries(definitions)
                 .map(([name, members], i) => {
-                    const num_dynamics = Object.values(members).filter(
-                        (v) => v.depth || sizes[v.type] === 0
+                    const num_dynamics = Object.values(members)
+                        .map(unnull)
+                        .filter(
+                            (v) => v.type === "array" || sizes[v.inner] === 0
+                        ).length;
+                    const num_nulls = Object.values(members).filter(
+                        (v) => v.type === "nullable"
                     ).length;
                     return `
 export const ${name} = {
     i: ${i + primitives},
     y: ${num_dynamics && (num_dynamics - 1) * 4},
+    u: ${(num_nulls + 7) >>> 3},
     f: { ${Object.entries(members)
-        .map(
-            ([k, v]) =>
-                `${k}: ${v.depth ? `array(${v.type}, ${v.depth})` : v.type}`
-        )
+        .map(([k, v]) => `${k}: ${typeToJS(v)}`)
         .join(", ")} },
     z: ${sizes[name]}
 };`;
@@ -94,12 +100,7 @@ declare const f64: number;
                 .map(([name, members]) => {
                     return `
 export interface ${name} extends Unwrap<{ ${Object.entries(members)
-                        .map(
-                            ([k, v]) =>
-                                `${k}: ${fixType(
-                                    v.type + "[]".repeat(v.depth)
-                                )}`
-                        )
+                        .map(([k, v]) => `${k}: ${fixType(typeToTS(v))}`)
                         .join(", ")} }> {};
 export declare const ${name}: PestType<${name}>;`;
                 })
@@ -110,10 +111,57 @@ export declare const ${name}: PestType<${name}>;`;
     throw new Error(`Unknown compile option: ${opts}`);
 }
 
-interface Type {
-    type: string;
-    // 0 for non-arrays
-    depth: number;
+interface Base {
+    type: "base";
+    inner: string;
+}
+
+interface Array {
+    type: "array";
+    inner: Type;
+}
+
+interface Nullable {
+    type: "nullable";
+    inner: Type;
+}
+
+type Type = Base | Array | Nullable;
+
+function typeToTS(type: Type): string {
+    switch (type.type) {
+        case "base":
+            return type.inner;
+        case "array":
+            return `${typeToTS(type.inner)}[]`;
+        case "nullable":
+            return `(${typeToTS(type.inner)} | null)`;
+    }
+}
+
+function typeToJS(type: Type): string {
+    switch (type.type) {
+        case "base":
+            return type.inner;
+        case "array":
+            let ty: Type = type;
+            let depth = 0;
+            while (ty.type === "array") {
+                ty = ty.inner;
+                depth++;
+            }
+            const el = typeToJS(ty);
+            return depth == 1 ? `array(${el})` : `array(${el}, ${depth})`;
+        case "nullable":
+            return `nullable(${typeToJS(type.inner)})`;
+    }
+}
+
+function unnull(type: Type): Base | Array {
+    if (type.type === "nullable") {
+        return unnull(type.inner);
+    }
+    return type;
 }
 
 function parse(code: string): Record<string, Record<string, Type>> {
@@ -156,12 +204,17 @@ function parse(code: string): Record<string, Record<string, Type>> {
         while (code[i] !== "}") {
             const key = read_identifier();
             expect(":");
-            const type = read_identifier();
+            const name = read_identifier();
 
-            const ty = { type, depth: 0 };
-            while (code[i] === "[" && code[i + 1] === "]") {
-                i += 2;
-                ty.depth++;
+            let ty: Type = { type: "base", inner: name };
+            while (true) {
+                if (code[i] === "?") {
+                    i++;
+                    ty = { type: "nullable", inner: ty };
+                } else if (code[i] === "[" && code[i + 1] === "]") {
+                    i += 2;
+                    ty = { type: "array", inner: ty };
+                } else break;
             }
             skip();
 

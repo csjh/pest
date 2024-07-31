@@ -44,54 +44,81 @@ export function serialize<T>(
             };
         }
         if (isNaN(ty.i)) {
-            return !ty.f.e.z
-                ? (data) => {
-                      emit(data.length, 4);
-                      const start = ptr;
-                      reserve(4 * data.length);
-                      ptr += 4 * data.length; // offset table
-                      for (let i = 0; i < data.length; i++) {
-                          dv.setUint32(
-                              start + 4 * i,
-                              ptr - 4 * data.length - start,
-                              true
-                          );
-                          get_serializer(ty.f.e)(data[i]);
-                      }
-                  }
-                : (data) => {
-                      emit(data.length, 4);
-                      // align to ty.e.z bytes
-                      if (ty.f.e.i < 10) ptr += -ptr & (ty.f.e.z - 1);
-                      for (let i = 0; i < data.length; i++) {
-                          get_serializer(ty.f.e)(data[i]);
-                      }
-                  };
+            return (data) => {
+                // set length
+                reserve(4);
+                dv.setUint32(ptr, data.length, true);
+                ptr += 4;
+
+                // skip over dynamic offset table
+                const start_of_offsets = ptr;
+                if (!ty.f.e.z) {
+                    ptr += reserve(4 * data.length);
+                }
+
+                // skip over null table otherwise align if TypedArray is available
+                const start_of_nulls = ptr;
+                if (ty.f.e.n) {
+                    ptr += reserve((data.length + 7) >>> 3);
+                } else if (ty.f.e.i < 10) {
+                    ptr += -ptr & (ty.f.e.z - 1);
+                }
+
+                const start_of_data = ptr;
+                for (let i = 0; i < data.length; i++) {
+                    if (!ty.f.e.z) {
+                        dv.setUint32(
+                            start_of_offsets + 4 * i,
+                            ptr - start_of_data,
+                            true
+                        );
+                    }
+                    if (data[i] != null) {
+                        get_serializer(ty.f.e)(data[i]);
+                    } else {
+                        uint8[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
+                        ptr += reserve(ty.f.e.z);
+                    }
+                }
+            };
         }
 
         return (data) => {
-                  const start = ptr;
-                  let first_dyn = 0;
-            ptr += ty.y + ty.u;
-                  let dynamics = 0;
-                  for (const [name, type] of Object.entries(ty.f).sort(
-                      (a, b) => b[1].z - a[1].z
-                  )) {
-                      if (!type.z) {
-                          if (dynamics === 0) {
-                              first_dyn = ptr;
-                          } else {
-                              dv.setUint32(
-                                  start + (dynamics - 1) * 4,
-                                  ptr - first_dyn,
-                                  true
-                              );
-                          }
-                          dynamics++;
-                      }
-                      get_serializer(type)(data[name]);
-                  }
-              };
+            // skip over dynamic offset table
+            const start_of_offsets = ptr;
+            ptr += ty.y;
+
+            // skip over null table
+            const start_of_nulls = ptr;
+            ptr += ty.u;
+
+            const start_of_data = ptr;
+            let dynamics = 0;
+            let nulls = 0;
+            for (const [name, type] of Object.entries(ty.f).sort(
+                (a, b) => b[1].z - a[1].z
+            )) {
+                if (!type.z) {
+                    if (dynamics !== 0) {
+                        dv.setUint32(
+                            start_of_offsets + (dynamics - 1) * 4,
+                            ptr - start_of_data,
+                            true
+                        );
+                    }
+                    dynamics++;
+                }
+                if (data[name] != null) {
+                    get_serializer(type)(data[name]);
+                } else {
+                    ptr += reserve(type.z);
+                    uint8[start_of_nulls + (nulls >>> 3)] |= 1 << (nulls & 7);
+                }
+                if (type.n) {
+                    nulls++;
+                }
+            }
+        };
     }
 
     function reserve(size: number) {
@@ -101,13 +128,7 @@ export function serialize<T>(
             uint8.set(old);
             dv = new DataView(uint8.buffer);
         }
-    }
-
-    function emit(value: number, size: number = 1) {
-        reserve(size);
-        for (let i = 0; i < size; i++) {
-            uint8[ptr++] = (value >>> (i * 8)) & 0xff;
-        }
+        return size;
     }
 
     if (isNaN(_schema.i)) {

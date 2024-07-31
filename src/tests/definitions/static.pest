@@ -7,3 +7,13 @@ interface Locations {
     home: Coordinate;
     work: Coordinate;
 }
+
+interface NullableCoordinate {
+    x: f32?;
+    y: f32?;
+}
+
+interface LocationsMaybeNoWork {
+    home: NullableCoordinate;
+    work: NullableCoordinate?;
+}

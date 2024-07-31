@@ -127,4 +127,131 @@ describe("definitions", async () => {
             true
         );
     });
+
+    it("should stay intact with static structs", async () => {
+        const {
+            serialize,
+            deserialize,
+            NullableCoordinate,
+            LocationsMaybeNoWork
+        } = await getSingleModule(
+            new URL("./definitions/static.pest", import.meta.url)
+        );
+
+        function mirror(data: unknown, schema: PestType<unknown>) {
+            const serialized = serialize(data, schema);
+            return materialize(deserialize(serialized, schema));
+        }
+
+        const coord = { x: 1, y: null };
+        expect(mirror(coord, NullableCoordinate)).toEqual(coord);
+        expect(
+            leftEqual(
+                coord,
+                deserialize(
+                    serialize(coord, NullableCoordinate),
+                    NullableCoordinate
+                )
+            )
+        ).toBe(true);
+
+        const locations = {
+            home: { x: null, y: 23 },
+            work: null
+        };
+        expect(mirror(locations, LocationsMaybeNoWork)).toEqual(locations);
+        expect(
+            leftEqual(
+                locations,
+                deserialize(
+                    serialize(locations, LocationsMaybeNoWork),
+                    LocationsMaybeNoWork
+                )
+            )
+        ).toBe(true);
+    });
+
+    it("should stay intact with dynamic structs", async () => {
+        const { serialize, deserialize, MapSketchyLocations } =
+            await getSingleModule(
+                new URL("./definitions/dynamic.pest", import.meta.url)
+            );
+
+        function mirror(data: unknown, schema: PestType<unknown>) {
+            const serialized = serialize(data, schema);
+            return materialize(deserialize(serialized, schema));
+        }
+
+        const map = {
+            locations: null,
+            user: "csjh",
+            default: {
+                name: "Work",
+                importance: 8,
+                coord: {
+                    x: 1.234320044517517,
+                    y: 2.234149932861328
+                },
+                starred: false,
+                saved_at: new Date("2021-09-01T00:00:00.000Z")
+            },
+            current: null
+        };
+
+        expect(mirror(map, MapSketchyLocations)).toEqual(map);
+        expect(
+            leftEqual(
+                map,
+                deserialize(
+                    serialize(map, MapSketchyLocations),
+                    MapSketchyLocations
+                )
+            )
+        ).toBe(true);
+
+        const map2 = {
+            locations: [
+                null,
+                {
+                    name: "Bad Pizza",
+                    importance: -1,
+                    coord: { x: 3.2343199253082275, y: 4.234149932861328 },
+                    starred: false,
+                    saved_at: new Date("2024-07-25T11:11:00.690Z")
+                }
+            ],
+            user: "csjh",
+            default: {
+                name: "Work",
+                importance: 8,
+                coord: {
+                    x: 1.234320044517517,
+                    y: 2.234149932861328
+                },
+                starred: false,
+                saved_at: new Date("2021-09-01T00:00:00.000Z")
+            },
+            current: {
+                name: "Home",
+                importance: 10,
+                coord: {
+                    x: 3.2343199253082275,
+                    y: 4.234149932861328
+                },
+                starred: true,
+                saved_at: new Date("2009-11-11T00:00:00.000Z")
+            }
+        };
+
+        expect(mirror(map2, MapSketchyLocations)).toEqual(map2);
+        expect(
+            leftEqual(
+                map2,
+                deserialize(
+                    serialize(map2, MapSketchyLocations),
+                    MapSketchyLocations
+                )
+            )
+        ).toBe(true);
+    });
 });
