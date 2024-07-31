@@ -18,11 +18,12 @@ import {
     string,
     RegExp,
     serialize,
-    deserialize
+    deserialize,
+    PestType
 } from "../internal/index.js";
 
-function test_primitive(data, schema) {
-    const serialized = serialize(data, schema);
+function test_primitive<T>(data: NoInfer<T>, schema: PestType<T>) {
+    const serialized = serialize(data as any, schema);
     const materialized = deserialize(serialized, schema);
     expect(materialized).toEqual(data);
     expect(materialize(materialized)).toEqual(data);
