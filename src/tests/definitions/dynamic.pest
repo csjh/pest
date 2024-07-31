@@ -24,3 +24,9 @@ interface MapSketchyLocations {
     default: SavedLocation;
     current: SavedLocation?;
 }
+
+interface Endpoint {
+    method: string;
+    route: string;
+    accessed_at: Date;
+}

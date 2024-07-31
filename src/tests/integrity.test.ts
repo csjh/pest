@@ -73,7 +73,7 @@ describe("definitions", async () => {
     });
 
     it("should stay intact with dynamic structs", async () => {
-        const { serialize, deserialize, Map } = await getSingleModule(
+        const { serialize, deserialize, Map, Endpoint } = await getSingleModule(
             new URL("./definitions/dynamic.pest", import.meta.url)
         );
 
@@ -126,6 +126,20 @@ describe("definitions", async () => {
         expect(leftEqual(map, deserialize(serialize(map, Map), Map))).toBe(
             true
         );
+
+        const endpoint = {
+            method: "GET",
+            route: "/endpoint",
+            accessed_at: new Date()
+        };
+
+        expect(mirror(endpoint, Endpoint)).toEqual(endpoint);
+        expect(
+            leftEqual(
+                endpoint,
+                deserialize(serialize(endpoint, Endpoint), Endpoint)
+            )
+        ).toBe(true);
     });
 
     it("should stay intact with static structs", async () => {

@@ -101,7 +101,7 @@ declare const f64: number;
                     return `
 export interface ${name} extends Unwrap<{ ${Object.entries(members)
                         .map(([k, v]) => `${k}: ${fixType(typeToTS(v))}`)
-                        .join(", ")} }> {};
+                        .join(", ")} }> {}
 export declare const ${name}: PestType<${name}>;`;
                 })
                 .join("\n")

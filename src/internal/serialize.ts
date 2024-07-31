@@ -92,9 +92,9 @@ export function serialize<T>(
             const start_of_nulls = ptr;
             ptr += ty.u;
 
-            const start_of_data = ptr;
             let dynamics = 0;
             let nulls = 0;
+            let first_dyn = 0;
             for (const [name, type] of Object.entries(ty.f).sort(
                 (a, b) => b[1].z - a[1].z
             )) {
@@ -102,9 +102,11 @@ export function serialize<T>(
                     if (dynamics !== 0) {
                         dv.setUint32(
                             start_of_offsets + (dynamics - 1) * 4,
-                            ptr - start_of_data,
+                            ptr - first_dyn,
                             true
                         );
+                    } else {
+                        first_dyn = ptr;
                     }
                     dynamics++;
                 }
