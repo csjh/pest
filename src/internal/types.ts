@@ -16,6 +16,10 @@ export interface PestTypeInternal {
     n?: 1;
 }
 
+type Prettify<T> = {
+    [K in keyof T]: T[K];
+} & {};
+
 export type Unwrap<T> = T extends PestType<infer U>
     ? Unwrap<U>
     : T extends Date | ArrayBufferView
@@ -37,7 +41,13 @@ export type AcceptBroad<T> = T extends Date
     : T extends (infer U)[]
     ? AcceptBroad<U>[]
     : T extends Record<any, any>
-    ? { [K in keyof T]: AcceptBroad<T[K]> }
+    ? Prettify<
+          {
+              [K in keyof T as null extends T[K] ? K : never]?: T[K];
+          } & {
+              [K in keyof T as null extends T[K] ? never : K]: T[K];
+          }
+      >
     : T;
 
 declare const type: unique symbol;
