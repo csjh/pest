@@ -43,9 +43,13 @@ export type AcceptBroad<T> = T extends Date
     : T extends Record<any, any>
     ? Prettify<
           {
-              [K in keyof T as null extends T[K] ? K : never]?: T[K];
+              [K in keyof T as null extends T[K] ? K : never]?: AcceptBroad<
+                  T[K]
+              >;
           } & {
-              [K in keyof T as null extends T[K] ? never : K]: T[K];
+              [K in keyof T as null extends T[K] ? never : K]: AcceptBroad<
+                  T[K]
+              >;
           }
       >
     : T;
