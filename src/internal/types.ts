@@ -18,6 +18,8 @@ export interface PestTypeInternal {
 
 export type Unwrap<T> = T extends PestType<infer U>
     ? Unwrap<U>
+    : T extends null
+    ? AcceptBroad<Exclude<T, null>> | null | undefined
     : T extends Date | ArrayBufferView
     ? T
     : T extends (infer U)[]
