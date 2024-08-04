@@ -32,9 +32,17 @@ export function compile(code: string, opts: CompileOptions): string {
             type = unnull(type);
             switch (type.type) {
                 case "base":
+                    if (!(type.inner in sizes)) {
+                        throw new Error(
+                            `Type ${type.inner} must be defined before usage`
+                        );
+                    }
+                    if (sizes[type.inner] === 0) {
+                        return -Infinity;
+                    }
                     return sizes[type.inner];
                 case "array":
-                    return 0;
+                    return -Infinity;
             }
         }
 
@@ -44,26 +52,12 @@ export function compile(code: string, opts: CompileOptions): string {
             if (def.type === "typedef") {
                 sizes[def.name] = get_sizeof(def.ty);
             } else if (def.type === "interface") {
-                for (const maybenull_member of Object.values(def.members)) {
-                    const member = unnull(maybenull_member);
-                    if (member.type !== "array") {
-                        if (!(member.inner in sizes)) {
-                            throw new Error(
-                                `Type ${name} must be defined before type ${member.inner}`
-                            );
-                        }
-                        if (!sizes[member.inner]) {
-                            size = 0;
-                            break;
-                        }
-                        size += sizes[member.inner];
-                        nulls += maybenull_member.type === "nullable" ? 1 : 0;
-                    } else {
-                        size = 0;
-                        break;
-                    }
+                for (const member of Object.values(def.members)) {
+                    size += get_sizeof(member);
+                    nulls += member.type === "nullable" ? 1 : 0;
                 }
-                sizes[def.name] = size + ((nulls + 7) >>> 3);
+                size += (nulls + 7) >>> 3;
+                sizes[def.name] = Math.max(size, 0);
             }
         }
 
