@@ -36,16 +36,7 @@ export function serialize<T>(
     ] satisfies Serializer[];
 
     function get_serializer(ty: PestTypeInternal): Serializer {
-        if (ty.i < 0)
-            return get_serializer(ty.f as unknown as PestTypeInternal);
-        if (ty.i < definitions.length) {
-            return (data) => {
-                reserve(ty.z);
-                definitions[ty.i](data);
-                ptr += ty.z;
-            };
-        }
-        if (isNaN(ty.i)) {
+        if (ty.i === -1) {
             return (data) => {
                 // set length
                 reserve(4);
@@ -54,21 +45,22 @@ export function serialize<T>(
 
                 // skip over dynamic offset table
                 const start_of_offsets = ptr;
-                if (!ty.f.e.z) {
+                if (!ty.f[0][1].z) {
                     ptr += reserve(4 * data.length);
                 }
 
                 // skip over null table otherwise align if TypedArray is available
                 const start_of_nulls = ptr;
-                if (ty.f.e.n) {
+                if (ty.f[0][1].n) {
                     ptr += reserve((data.length + 7) >>> 3);
-                } else if (ty.f.e.i < 10) {
-                    ptr += -ptr & (ty.f.e.z - 1);
+                } else if (0 <= ty.f[0][1].i && ty.f[0][1].i < 10) {
+                    ptr += -ptr & (ty.f[0][1].z - 1);
                 }
 
                 const start_of_data = ptr;
+                const deserializer = get_serializer(ty.f[0][1]);
                 for (let i = 0; i < data.length; i++) {
-                    if (!ty.f.e.z) {
+                    if (!ty.f[0][1].z) {
                         dv.setUint32(
                             start_of_offsets + 4 * i,
                             ptr - start_of_data,
@@ -76,12 +68,20 @@ export function serialize<T>(
                         );
                     }
                     if (data[i] != null) {
-                        get_serializer(ty.f.e)(data[i]);
+                        deserializer(data[i]);
                     } else {
                         uint8[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
-                        ptr += reserve(ty.f.e.z);
+                        ptr += reserve(ty.f[0][1].z);
                     }
                 }
+            };
+        }
+        if (ty.i < 0) return get_serializer(ty.f[0][1]);
+        if (ty.i < definitions.length) {
+            return (data) => {
+                reserve(ty.z);
+                definitions[ty.i](data);
+                ptr += ty.z;
             };
         }
 
@@ -97,9 +97,7 @@ export function serialize<T>(
             let dynamics = 0;
             let nulls = 0;
             let first_dyn = 0;
-            for (const [name, type] of Object.entries(ty.f).sort(
-                (a, b) => b[1].z - a[1].z
-            )) {
+            for (const [name, type] of ty.f) {
                 if (!type.z) {
                     if (dynamics !== 0) {
                         dv.setUint32(
@@ -135,8 +133,8 @@ export function serialize<T>(
         return size;
     }
 
-    if (isNaN(_schema.i)) {
-        dv.setInt32(0, _schema.f.m.i | (1 << 31), true);
+    if (_schema.i === -1) {
+        dv.setInt32(0, _schema.f[1][1].i | (1 << 31), true);
         dv.setUint32(4, _schema.y, true);
     } else {
         dv.setInt32(0, Math.abs(_schema.i), true);

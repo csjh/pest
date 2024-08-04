@@ -69,7 +69,7 @@ export function compile(code: string, opts: CompileOptions): string {
 
         return (
             `export { serialize, deserialize } from "pest/internal";
-import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp } from "pest/internal";
+import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp, sort_fields } from "pest/internal";
 ` +
             definitions
                 .map((def, i) => {
@@ -77,7 +77,7 @@ import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolea
                         return `
 export const ${def.name} = {
     i: -${i + primitives},
-    f: ${typeToJS(def.ty)}
+    f: [["", ${typeToJS(def.ty)}]]
 };`;
                     } else if (def.type === "interface") {
                         const num_dynamics = Object.values(def.members)
@@ -94,9 +94,9 @@ export const ${def.name} = {
     i: ${i + primitives},
     y: ${num_dynamics && (num_dynamics - 1) * 4},
     u: ${(num_nulls + 7) >>> 3},
-    f: { ${Object.entries(def.members)
+    f: sort_fields({ ${Object.entries(def.members)
         .map(([k, v]) => `${k}: ${typeToJS(v)}`)
-        .join(", ")} },
+        .join(", ")} }),
     z: ${sizes[def.name]}
 };`;
                     }
