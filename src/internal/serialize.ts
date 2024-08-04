@@ -36,6 +36,8 @@ export function serialize<T>(
     ] satisfies Serializer[];
 
     function get_serializer(ty: PestTypeInternal): Serializer {
+        if (ty.i < 0)
+            return get_serializer(ty.f as unknown as PestTypeInternal);
         if (ty.i < definitions.length) {
             return (data) => {
                 reserve(ty.z);
@@ -137,7 +139,7 @@ export function serialize<T>(
         dv.setInt32(0, _schema.f.m.i | (1 << 31), true);
         dv.setUint32(4, _schema.y, true);
     } else {
-        dv.setInt32(0, _schema.i, true);
+        dv.setInt32(0, Math.abs(_schema.i), true);
     }
     get_serializer(_schema)(data);
     return uint8.subarray(0, ptr);

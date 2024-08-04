@@ -672,10 +672,14 @@ describe("nested arrays", async () => {
     });
 
     it("should stay intact with nullish static struct arrays", async () => {
-        const { serialize, deserialize, Coordinate, Locations } =
-            await getSingleModule(
-                new URL("./definitions/static.pest", import.meta.url)
-            );
+        const {
+            serialize,
+            deserialize,
+            NullableCoordArrayArray,
+            NullableLocations
+        } = await getSingleModule(
+            new URL("./definitions/static.pest", import.meta.url)
+        );
 
         function mirror(data: unknown, schema: PestType<unknown>) {
             const serialized = serialize(data, schema);
@@ -689,15 +693,13 @@ describe("nested arrays", async () => {
                 { x: 1, y: 2 }
             ]
         ];
-        expect(mirror(coord, array(nullable(array(Coordinate))))).toEqual(
-            coord
-        );
+        expect(mirror(coord, NullableCoordArrayArray)).toEqual(coord);
         expect(
             leftEqual(
                 coord,
                 deserialize(
-                    serialize(coord, array(nullable(array(Coordinate)))),
-                    array(nullable(array(Coordinate)))
+                    serialize(coord, NullableCoordArrayArray),
+                    NullableCoordArrayArray
                 )
             )
         ).toBe(true);
@@ -724,24 +726,23 @@ describe("nested arrays", async () => {
                 }
             ]
         ];
-        expect(mirror(locations, array(nullable(Locations), 2))).toEqual(
-            locations
-        );
+        expect(mirror(locations, NullableLocations)).toEqual(locations);
         expect(
             leftEqual(
                 locations,
                 deserialize(
-                    serialize(locations, array(nullable(Locations), 2)),
-                    array(nullable(Locations), 2)
+                    serialize(locations, NullableLocations),
+                    NullableLocations
                 )
             )
         ).toBe(true);
     });
 
     it("should stay intact with nullish dynamic struct arrays", async () => {
-        const { serialize, deserialize, Map } = await getSingleModule(
-            new URL("./definitions/dynamic.pest", import.meta.url)
-        );
+        const { serialize, deserialize, NullableMapArrayArray } =
+            await getSingleModule(
+                new URL("./definitions/dynamic.pest", import.meta.url)
+            );
 
         function mirror(data: unknown, schema: PestType<unknown>) {
             const serialized = serialize(data, schema);
@@ -889,13 +890,13 @@ describe("nested arrays", async () => {
             ]
         ];
 
-        expect(mirror(map, array(nullable(array(Map))))).toEqual(map);
+        expect(mirror(map, NullableMapArrayArray)).toEqual(map);
         expect(
             leftEqual(
                 map,
                 deserialize(
-                    serialize(map, array(nullable(array(Map)))),
-                    array(nullable(array(Map)))
+                    serialize(map, NullableMapArrayArray),
+                    NullableMapArrayArray
                 )
             )
         ).toBe(true);

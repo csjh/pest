@@ -17,3 +17,7 @@ interface LocationsMaybeNoWork {
     home: NullableCoordinate;
     work: NullableCoordinate?;
 }
+
+typedef NullableCoordArrayArray = Coordinate[]?[];
+
+typedef NullableLocations = Locations?[][];

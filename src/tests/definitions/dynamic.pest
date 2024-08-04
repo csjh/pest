@@ -30,3 +30,5 @@ interface Endpoint {
     route: string;
     accessed_at: Date;
 }
+
+typedef NullableMapArrayArray = Map[]?[];

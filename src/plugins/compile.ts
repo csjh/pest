@@ -75,7 +75,10 @@ import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolea
                 .map((def, i) => {
                     if (def.type === "typedef") {
                         return `
-export const ${def.name} = ${typeToJS(def.ty)};`;
+export const ${def.name} = {
+    i: -${i + primitives},
+    f: ${typeToJS(def.ty)}
+};`;
                     } else if (def.type === "interface") {
                         const num_dynamics = Object.values(def.members)
                             .map(unnull)

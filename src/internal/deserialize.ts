@@ -82,6 +82,8 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     }
 
     function get_deserializer(ty: PestTypeInternal): Deserializer {
+        if (ty.i < 0)
+            return get_deserializer(ty.f as unknown as PestTypeInternal);
         if (ty.i < definitions.length) return definitions[ty.i];
         if (isNaN(ty.i)) return (ptr) => PestArray(ptr, ty.f.e!);
 
@@ -159,7 +161,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if ((type_id & 0x7fffffff) !== internal.f.m.i) {
             throw new Error("Type mismatch");
         }
-    } else if (type_id !== internal.i) {
+    } else if (type_id !== Math.abs(internal.i)) {
         throw new Error("Type mismatch");
     }
     return get_deserializer(internal)(ptr) as T;
