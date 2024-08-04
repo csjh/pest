@@ -1,4 +1,4 @@
-export type Serializer = (data: any) => void;
+export type Serializer = (dv: DataView, ptr: number, data: any, uint8: Uint8Array) => number;
 export type Deserializer = (ptr: number, dv: DataView) => unknown;
 
 export interface PestTypeInternal {
