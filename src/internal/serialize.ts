@@ -26,8 +26,27 @@ export function serialize<T>(
         (data) => dv.setFloat64(ptr, data, true),
         (data) => {
             // i think this is enough for utf-16
-            reserve(4 + data.length * 2);
-            const length = encoder.encodeInto(data, uint8.subarray(ptr + 4)).written;
+            reserve(4 + data.length * 3);
+
+            // stolen from [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen/blob/cf186acf48c4b0649934d19ba1aa18282bd2ec44/crates/cli/tests/reference/string-arg.js#L46)
+            let length = 0;
+            for (; length < data.length; length++) {
+                const code = data.charCodeAt(length);
+                if (code > 0x7f) break;
+                uint8[ptr + 4 + length] = code;
+            }
+        
+            if (length !== data.length) {
+                if (length !== 0) {
+                    data = data.slice(length);
+                }
+        
+                length += encoder.encodeInto(
+                    data,
+                    uint8.subarray(ptr + 4 + length, ptr + data.length)
+                ).written;
+            }
+        
             dv.setUint32(ptr, length, true);
             ptr += 4 + length;
         },
