@@ -28,55 +28,75 @@ export function compile(code: string, opts: CompileOptions): string {
         };
         const primitives = Object.keys(sizes).length;
 
-        for (const [name, members] of Object.entries(definitions)) {
+        function get_sizeof(type: Type): number {
+            type = unnull(type);
+            switch (type.type) {
+                case "base":
+                    return sizes[type.inner];
+                case "array":
+                    return 0;
+            }
+        }
+
+        for (const def of definitions) {
             let size = 0;
             let nulls = 0;
-            for (const maybenull_member of Object.values(members)) {
-                const member = unnull(maybenull_member);
-                if (member.type !== "array") {
-                    if (!(member.inner in sizes)) {
-                        throw new Error(
-                            `Type ${name} must be defined before type ${member.inner}`
-                        );
-                    }
-                    if (!sizes[member.inner]) {
+            if (def.type === "typedef") {
+                sizes[def.name] = get_sizeof(def.ty);
+            } else if (def.type === "interface") {
+                for (const maybenull_member of Object.values(def.members)) {
+                    const member = unnull(maybenull_member);
+                    if (member.type !== "array") {
+                        if (!(member.inner in sizes)) {
+                            throw new Error(
+                                `Type ${name} must be defined before type ${member.inner}`
+                            );
+                        }
+                        if (!sizes[member.inner]) {
+                            size = 0;
+                            break;
+                        }
+                        size += sizes[member.inner];
+                        nulls += maybenull_member.type === "nullable" ? 1 : 0;
+                    } else {
                         size = 0;
                         break;
                     }
-                    size += sizes[member.inner];
-                    nulls += maybenull_member.type === "nullable" ? 1 : 0;
-                } else {
-                    size = 0;
-                    break;
                 }
+                sizes[def.name] = size + ((nulls + 7) >>> 3);
             }
-            sizes[name] = size + ((nulls + 7) >>> 3);
         }
 
         return (
             `export { serialize, deserialize } from "pest/internal";
 import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp } from "pest/internal";
 ` +
-            Object.entries(definitions)
-                .map(([name, members], i) => {
-                    const num_dynamics = Object.values(members)
-                        .map(unnull)
-                        .filter(
-                            (v) => v.type === "array" || sizes[v.inner] === 0
+            definitions
+                .map((def, i) => {
+                    if (def.type === "typedef") {
+                        return `
+export const ${def.name} = ${typeToJS(def.ty)};`;
+                    } else if (def.type === "interface") {
+                        const num_dynamics = Object.values(def.members)
+                            .map(unnull)
+                            .filter(
+                                (v) =>
+                                    v.type === "array" || sizes[v.inner] === 0
+                            ).length;
+                        const num_nulls = Object.values(def.members).filter(
+                            (v) => v.type === "nullable"
                         ).length;
-                    const num_nulls = Object.values(members).filter(
-                        (v) => v.type === "nullable"
-                    ).length;
-                    return `
-export const ${name} = {
+                        return `
+export const ${def.name} = {
     i: ${i + primitives},
     y: ${num_dynamics && (num_dynamics - 1) * 4},
     u: ${(num_nulls + 7) >>> 3},
-    f: { ${Object.entries(members)
+    f: { ${Object.entries(def.members)
         .map(([k, v]) => `${k}: ${typeToJS(v)}`)
         .join(", ")} },
-    z: ${sizes[name]}
+    z: ${sizes[def.name]}
 };`;
+                    }
                 })
                 .join("\n")
         );
@@ -164,10 +184,22 @@ function unnull(type: Type): Base | Array {
     return type;
 }
 
-function parse(code: string): Record<string, Record<string, Type>> {
-    const keyword = "interface";
+interface Interface {
+    type: "interface";
+    name: string;
+    members: Record<string, Type>;
+}
 
-    const module: Record<string, Record<string, Type>> = {};
+interface Typedef {
+    type: "typedef";
+    name: string;
+    ty: Type;
+}
+
+type Definition = Interface | Typedef;
+
+function parse(code: string) {
+    const module: Definition[] = [];
 
     let i = 0;
     function skip() {
@@ -190,42 +222,62 @@ function parse(code: string): Record<string, Record<string, Type>> {
         skip();
     }
 
-    skip();
-    while (i < code.length) {
-        const interface_ = read_identifier();
-        if (interface_ !== keyword) {
-            throw new Error(`Expected "${keyword}", found ` + interface_);
+    function read_type(): Type {
+        const name = read_identifier();
+
+        let ty: Type = { type: "base", inner: name };
+        while (true) {
+            if (code[i] === "?") {
+                i++;
+                ty = { type: "nullable", inner: ty };
+            } else if (code[i] === "[" && code[i + 1] === "]") {
+                i += 2;
+                ty = { type: "array", inner: ty };
+            } else break;
         }
-
-        const typename = read_identifier();
-        expect("{");
-
-        const members: Record<string, Type> = {};
-        while (code[i] !== "}") {
-            const key = read_identifier();
-            expect(":");
-            const name = read_identifier();
-
-            let ty: Type = { type: "base", inner: name };
-            while (true) {
-                if (code[i] === "?") {
-                    i++;
-                    ty = { type: "nullable", inner: ty };
-                } else if (code[i] === "[" && code[i + 1] === "]") {
-                    i += 2;
-                    ty = { type: "array", inner: ty };
-                } else break;
-            }
-            skip();
-
-            expect(";");
-
-            members[key] = ty;
-        }
-        i++;
         skip();
 
-        module[typename] = members;
+        return ty;
+    }
+
+    skip();
+    while (i < code.length) {
+        const ident = read_identifier();
+        if (ident === "interface") {
+            const name = read_identifier();
+            expect("{");
+
+            const members: Record<string, Type> = {};
+            while (code[i] !== "}") {
+                const key = read_identifier();
+                expect(":");
+
+                const ty = read_type();
+
+                expect(";");
+
+                members[key] = ty;
+            }
+            i++;
+            skip();
+
+            module.push({ type: "interface", name, members });
+        } else if (ident === "typedef") {
+            const name = read_identifier();
+            expect("=");
+            const ty = read_type();
+            if (ty.type === "nullable") {
+                throw new Error(
+                    `typedef ${name} is invalid, only struct members or array elements can be nullable`
+                );
+            }
+            expect(";");
+            module.push({ type: "typedef", name, ty });
+        } else {
+            throw new Error(
+                `Unexpected identifier: ${ident}, expected interface or typedef`
+            );
+        }
     }
 
     return module;
