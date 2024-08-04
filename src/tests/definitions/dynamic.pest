@@ -32,3 +32,4 @@ interface Endpoint {
 }
 
 typedef NullableMapArrayArray = Map[]?[];
+typedef NullableMapArray = Map?[];

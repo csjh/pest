@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from "bun:test";
 import { getSingleModule } from "./utils.js";
-import { materialize, array, nullable } from "../index.js";
+import { materialize, array } from "../index.js";
 import { PestType } from "../internal/types.js";
 
 function leftEqual(left: unknown, right: unknown) {
@@ -215,10 +215,14 @@ describe("unnested arrays", async () => {
     });
 
     it("should stay intact with static struct arrays", async () => {
-        const { serialize, deserialize, Coordinate, Locations } =
-            await getSingleModule(
-                new URL("./definitions/static.pest", import.meta.url)
-            );
+        const {
+            serialize,
+            deserialize,
+            NullableCoordArray,
+            NullableLocationArray
+        } = await getSingleModule(
+            new URL("./definitions/static.pest", import.meta.url)
+        );
 
         function mirror(data: unknown, schema: PestType<unknown>) {
             const serialized = serialize(data, schema);
@@ -226,13 +230,13 @@ describe("unnested arrays", async () => {
         }
 
         const coord = [null, { x: 1, y: 2 }];
-        expect(mirror(coord, array(nullable(Coordinate)))).toEqual(coord);
+        expect(mirror(coord, NullableCoordArray)).toEqual(coord);
         expect(
             leftEqual(
                 coord,
                 deserialize(
-                    serialize(coord, array(nullable(Coordinate))),
-                    array(nullable(Coordinate))
+                    serialize(coord, NullableCoordArray),
+                    NullableCoordArray
                 )
             )
         ).toBe(true);
@@ -244,24 +248,23 @@ describe("unnested arrays", async () => {
             },
             null
         ];
-        expect(mirror(locations, array(nullable(Locations)))).toEqual(
-            locations
-        );
+        expect(mirror(locations, NullableLocationArray)).toEqual(locations);
         expect(
             leftEqual(
                 locations,
                 deserialize(
-                    serialize(locations, array(nullable(Locations))),
-                    array(nullable(Locations))
+                    serialize(locations, NullableLocationArray),
+                    NullableLocationArray
                 )
             )
         ).toBe(true);
     });
 
     it("should stay intact with dynamic struct arrays", async () => {
-        const { serialize, deserialize, Map } = await getSingleModule(
-            new URL("./definitions/dynamic.pest", import.meta.url)
-        );
+        const { serialize, deserialize, NullableMapArray } =
+            await getSingleModule(
+                new URL("./definitions/dynamic.pest", import.meta.url)
+            );
 
         function mirror(data: unknown, schema: PestType<unknown>) {
             const serialized = serialize(data, schema);
@@ -311,14 +314,11 @@ describe("unnested arrays", async () => {
             null
         ];
 
-        expect(mirror(map, array(nullable(Map)))).toEqual(map);
+        expect(mirror(map, NullableMapArray)).toEqual(map);
         expect(
             leftEqual(
                 map,
-                deserialize(
-                    serialize(map, array(nullable(Map))),
-                    array(nullable(Map))
-                )
+                deserialize(serialize(map, NullableMapArray), NullableMapArray)
             )
         ).toBe(true);
     });
