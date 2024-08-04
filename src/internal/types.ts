@@ -1,5 +1,5 @@
 export type Serializer = (data: any) => void;
-export type Deserializer = (ptr: number) => unknown;
+export type Deserializer = (ptr: number, dv: DataView) => unknown;
 
 export interface PestTypeInternal {
     /** id */
@@ -14,6 +14,8 @@ export interface PestTypeInternal {
     z: number;
     /** whether or not it can be null */
     n?: 1;
+    /** cached deserializer */
+    d?: Deserializer;
 }
 
 type Prettify<T> = {

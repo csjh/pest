@@ -1,35 +1,31 @@
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
 interface Instance {
-    $: number;
+    $p: number;
+    $d: DataView;
 }
 
 const decoder = new TextDecoder();
 
 export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
-    const internal = schema as unknown as PestTypeInternal;
-    const buffer = msg.buffer;
-    const dv = new DataView(buffer);
-    let ptr = 8;
-
     // prettier-ignore
     const definitions = [
-        (ptr) => dv.getInt8(ptr),  (ptr) => dv.getInt16(ptr, true),  (ptr) => dv.getInt32(ptr, true),  (ptr) => dv.getBigInt64(ptr, true),
-        (ptr) => dv.getUint8(ptr), (ptr) => dv.getUint16(ptr, true), (ptr) => dv.getUint32(ptr, true), (ptr) => dv.getBigUint64(ptr, true),
-        (ptr) => dv.getFloat32(ptr, true), (ptr) => dv.getFloat64(ptr, true),
-        (ptr) => dv.getUint8(ptr) !== 0,
-        (ptr) => new Date(dv.getFloat64(ptr, true)),
-        (ptr) => decoder.decode(new Uint8Array(buffer, ptr + 4, dv.getUint32(ptr, true))),
-        ((ptr) => {
-            const [flags, source] = definitions[12](ptr).split('\0', 2);
+        (ptr, dv) => dv.getInt8(ptr),  (ptr, dv) => dv.getInt16(ptr, true),  (ptr, dv) => dv.getInt32(ptr, true),  (ptr, dv) => dv.getBigInt64(ptr, true),
+        (ptr, dv) => dv.getUint8(ptr), (ptr, dv) => dv.getUint16(ptr, true), (ptr, dv) => dv.getUint32(ptr, true), (ptr, dv) => dv.getBigUint64(ptr, true),
+        (ptr, dv) => dv.getFloat32(ptr, true), (ptr, dv) => dv.getFloat64(ptr, true),
+        (ptr, dv) => dv.getUint8(ptr) !== 0,
+        (ptr, dv) => new Date(dv.getFloat64(ptr, true)),
+        (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))),
+        ((ptr, dv) => {
+            const [flags, source] = definitions[12](ptr, dv).split('\0', 2);
             return new RegExp(source, flags);
         }) as Deserializer,
     ] as const satisfies Deserializer[];
 
-    function PestArray(ptr: number, ty: PestTypeInternal) {
+    function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
         const len = dv.getUint32(ptr, true);
         ptr += 4;
-        if (ty.i < 10 && !ty.n) {
+        if (0 <= ty.i && ty.i < 10 && !ty.n) {
             // align to ty.z bytes
             ptr += -ptr & (ty.z - 1);
             return new [
@@ -43,7 +39,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                 BigUint64Array,
                 Float32Array,
                 Float64Array
-            ][ty.i](buffer, ptr, len);
+            ][ty.i](dv.buffer, ptr, len);
         }
 
         const deserializer = get_deserializer(ty);
@@ -54,7 +50,9 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                 } else if (typeof prop === "string" && !isNaN(+prop)) {
                     if (
                         ty.n &&
-                        msg[ptr + (ty.z ? 0 : len * 4) + (+prop >>> 3)] &
+                        dv.getUint8(
+                            ptr + (ty.z ? 0 : len * 4) + (+prop >>> 3)
+                        ) &
                             (1 << (+prop & 7))
                     )
                         return null;
@@ -64,7 +62,9 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                             (ty.n ? (len + 7) >>> 3 : 0) +
                             (ty.z
                                 ? +prop * ty.z
-                                : len * 4 + dv.getUint32(ptr + +prop * 4, true))
+                                : len * 4 +
+                                  dv.getUint32(ptr + +prop * 4, true)),
+                        dv
                     );
                 }
                 // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
@@ -82,25 +82,25 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     }
 
     function get_deserializer(ty: PestTypeInternal): Deserializer {
-        if (ty.i < 0)
-            return get_deserializer(ty.f as unknown as PestTypeInternal);
-        if (ty.i < definitions.length) return definitions[ty.i];
-        if (isNaN(ty.i)) return (ptr) => PestArray(ptr, ty.f.e!);
+        if (ty.d) return ty.d;
+        if (ty.i === -1)
+            return (ty.d = (ptr, dv) => PestArray(ptr, ty.f[0][1], dv));
+        if (ty.i < 0) return (ty.d = get_deserializer(ty.f[0][1]));
+        if (ty.i < definitions.length) return (ty.d = definitions[ty.i]);
 
         // values start after the offset table
         let pos = ty.y + ty.u;
         let dynamics = 0;
         let nulls = 0;
 
-        function fn(this: Instance, ptr: number) {
+        function fn(this: Instance, ptr: number, dv: DataView) {
             // @ts-expect-error technically doesn't have right signature
-            if (!this) return new fn(ptr);
-            Object.defineProperty(this, "$", { value: ptr });
+            if (!this) return new fn(ptr, dv);
+            Object.defineProperty(this, "$p", { value: ptr });
+            Object.defineProperty(this, "$d", { value: dv });
         }
 
-        for (const [name, field] of Object.entries(ty.f).sort(
-            (a, b) => b[1].z - a[1].z
-        )) {
+        for (const [name, field] of ty.f) {
             const deserializer = get_deserializer(field);
             // make sure the closures capture their own values
             const posx = pos;
@@ -111,15 +111,19 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                     get(this: Instance) {
                         if (
                             field.n &&
-                            msg[this.$ + ty.y + (nullsx >>> 3)] &
+                            this.$d.getUint8(this.$p + ty.y + (nullsx >>> 3)) &
                                 (1 << (nullsx & 7))
                         )
                             return null;
 
                         return deserializer(
-                            this.$! +
+                            this.$p! +
                                 posx +
-                                dv.getUint32(this.$! + table_offset, true)
+                                this.$d.getUint32(
+                                    this.$p! + table_offset,
+                                    true
+                                ),
+                            this.$d
                         );
                     },
                     enumerable: true
@@ -129,12 +133,12 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
                     get(this: Instance) {
                         if (
                             field.n &&
-                            msg[this.$ + ty.y + (nullsx >>> 3)] &
+                            this.$d.getUint8(this.$p + ty.y + (nullsx >>> 3)) &
                                 (1 << (nullsx & 7))
                         )
                             return null;
 
-                        return deserializer(this.$! + posx);
+                        return deserializer(this.$p! + posx, this.$d);
                     },
                     enumerable: true
                 });
@@ -145,26 +149,31 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
             if (field.n) nulls++;
         }
 
-        return fn;
+        return (ty.d = fn);
     }
+
+    const internal = schema as unknown as PestTypeInternal;
+    const buffer = msg.buffer;
+    const dv = new DataView(buffer);
 
     const type_id = dv.getInt32(0, true);
     const depth = dv.getUint32(4, true);
     // TODO: make this work with external nested array/nullable stuff
     if (type_id < 0) {
-        if (!isNaN(internal.i)) {
+        if (internal.i !== -1) {
             throw new Error("Expected array type");
         }
         if (depth !== internal.y) {
             throw new Error("Depth mismatch");
         }
-        if ((type_id & 0x7fffffff) !== internal.f.m.i) {
+        if ((type_id & 0x7fffffff) !== internal.f[1][1].i) {
             throw new Error("Type mismatch");
         }
     } else if (type_id !== Math.abs(internal.i)) {
         throw new Error("Type mismatch");
     }
-    return get_deserializer(internal)(ptr) as T;
+    // 8 = skip over type id and depth
+    return get_deserializer(internal)(8, dv) as T;
 }
 
 /*
