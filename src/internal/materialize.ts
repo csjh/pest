@@ -124,35 +124,3 @@ export function materialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     // 8 = skip over type id and depth
     return get_materialized(8, dv, internal) as T;
 }
-
-/*
-typedef typeid (variable length integer with leading bits indicating depth of array then number indicating type)
-
-struct definitions {
-    type id (typeid but no wasted bit for array depth) (0 if done definitions)
-    number of dynamic fields (leb128)
-    array {
-        field name (null terminated string? or fat?)
-        field type (typeid)
-    }
-    null terminator
-}
-type of payload
---- delimiter (null terminator? implied?)
-[payload]
-*/
-
-/*
-everything aligned to 128 bits (wasm simd size)
-
-representation
-----------------
-fixed size: (i|u)(8|16|32|64), f(32|64), bool, null, date, structs composed of fixed size types
-    - future features: static sized arrays, tuples?, errors?
-    - optimization potential: null bitsets in padding bits
-dynamic: arrays, strings, structs composed of dynamic types
-    - null bitmaps for arrays with null potential
-    - in static sized arrays, null bit in padding bits if there's space beside the null bitset
-    - dynamic structs:
-        - need offset array for dynamic members start?/end
-*/
