@@ -9,7 +9,7 @@ export interface PestTypeInternal {
     /** length of null offset table */
     u: number;
     /** fields partitioned by dynamic-ness; if array, [(the element type, possibly a nested array), (the element type, unnested)] */
-    f: [string, PestTypeInternal][];
+    f: Record<string, PestTypeInternal>;
     /** sizeof */
     z: number;
     /** whether or not it can be null */

@@ -21,10 +21,7 @@ export function array<T>(e: PestType<T>, depth: number = 1): PestType<T[]> {
               i: -1,
               y: depth,
               u: 0,
-              f: [
-                  ["", array(e, depth - 1)],
-                  ["", e]
-              ],
+              f: { e: array(e, depth - 1), m: e },
               z: 0
           }
         : e) as unknown as PestType<T[]>;
@@ -32,8 +29,4 @@ export function array<T>(e: PestType<T>, depth: number = 1): PestType<T[]> {
 
 export function nullable(t: PestTypeInternal): PestTypeInternal {
     return { ...t, n: 1 };
-}
-
-export function sort_fields(obj: Record<string, PestTypeInternal>) {
-    return Object.entries(obj).sort((a, b) => b[1].z - a[1].z);
 }

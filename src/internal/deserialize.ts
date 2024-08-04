@@ -84,8 +84,8 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     function get_deserializer(ty: PestTypeInternal): Deserializer {
         if (ty.d) return ty.d;
         if (ty.i === -1)
-            return (ty.d = (ptr, dv) => PestArray(ptr, ty.f[0][1], dv));
-        if (ty.i < 0) return (ty.d = get_deserializer(ty.f[0][1]));
+            return (ty.d = (ptr, dv) => PestArray(ptr, ty.f.e, dv));
+        if (ty.i < 0) return (ty.d = get_deserializer(ty.f.e));
         if (ty.i < definitions.length) return (ty.d = definitions[ty.i]);
 
         // values start after the offset table
@@ -100,7 +100,8 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
             Object.defineProperty(this, "$d", { value: dv });
         }
 
-        for (const [name, field] of ty.f) {
+        for (const name in ty.f) {
+            const field = ty.f[name];
             const deserializer = get_deserializer(field);
             // make sure the closures capture their own values
             const posx = pos;
@@ -166,7 +167,7 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (depth !== internal.y) {
             throw new Error("Depth mismatch");
         }
-        if ((type_id & 0x7fffffff) !== internal.f[1][1].i) {
+        if ((type_id & 0x7fffffff) !== internal.f.m.i) {
             throw new Error("Type mismatch");
         }
     } else if (type_id !== Math.abs(internal.i)) {
