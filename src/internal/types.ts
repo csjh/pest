@@ -16,6 +16,17 @@ export interface PestTypeInternal {
     n?: 1;
     /** cached deserializer */
     d?: Deserializer;
+    /** cached materializer */
+    m?: (
+        ptr: number,
+        dv: DataView,
+        fields: Record<string, PestTypeInternal>,
+        get_materializer: (
+            ptr: number,
+            dv: DataView,
+            ty: PestTypeInternal
+        ) => any
+    ) => any;
 }
 
 type Prettify<T> = {

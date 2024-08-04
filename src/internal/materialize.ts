@@ -64,40 +64,40 @@ function get_materialized(
     dv: DataView,
     ty: PestTypeInternal
 ): any {
-    if (ty.i === -1) return PestArray(ptr, dv, ty.f[0][1]);
-    if (ty.i < 0) return get_materialized(ptr, dv, ty.f[0][1]);
+    if (ty.i === -1) return PestArray(ptr, dv, ty.f.e);
+    if (ty.i < 0) return get_materialized(ptr, dv, ty.f.e);
     if (ty.i < definitions.length) return definitions[ty.i](ptr, dv);
+    if (ty.m) return ty.m(ptr, dv, ty.f, get_materialized);
 
     // values start after the offset table
     let pos = ty.y + ty.u;
     let dynamics = 0;
     let nulls = 0;
 
-    const obj: Record<string, any> = {};
-
-    for (const [name, field] of ty.f) {
-        if (
-            field.n &&
-            dv.getUint8(ptr + ty.y + (nulls >>> 3)) & (1 << (nulls & 7))
-        ) {
-            obj[name] = null;
-        } else if (!ty.z && dynamics !== 0) {
+    let fn = `return{`;
+    for (const name in ty.f) {
+        const field = ty.f[name];
+        fn += `${name}:`;
+        if (field.n) {
+            fn += `d.getUint8(p+${ty.y + (nulls >>> 3)})&${
+                1 << (nulls & 7)
+            }?null:`;
+        }
+        if (!ty.z && dynamics !== 0) {
             const table_offset = (dynamics - 1) * 4;
-            obj[name] = get_materialized(
-                ptr + pos + dv.getUint32(ptr + table_offset, true),
-                dv,
-                field
-            );
+            fn += `g(p+${pos}+d.getUint32(p+${table_offset},1),d,f.${name}),`;
         } else {
-            obj[name] = get_materialized(ptr + pos, dv, field);
+            fn += `g(p+${pos},d,f.${name}),`;
         }
         pos += field.z;
         // @ts-expect-error complain to brendan eich
         dynamics += !field.z;
         if (field.n) nulls++;
     }
+    fn += `}`;
 
-    return obj;
+    ty.m = new Function("p", "d", "f", "g", fn) as unknown as (typeof ty)["m"];
+    return ty.m!(ptr, dv, ty.f, get_materialized);
 }
 
 export function materialize<T>(msg: Uint8Array, schema: PestType<T>): T {
@@ -115,7 +115,7 @@ export function materialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (depth !== internal.y) {
             throw new Error("Depth mismatch");
         }
-        if ((type_id & 0x7fffffff) !== internal.f[1][1].i) {
+        if ((type_id & 0x7fffffff) !== internal.f.m.i) {
             throw new Error("Type mismatch");
         }
     } else if (type_id !== Math.abs(internal.i)) {
