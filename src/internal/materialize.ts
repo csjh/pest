@@ -107,7 +107,6 @@ export function materialize<T>(msg: Uint8Array, schema: PestType<T>): T {
 
     const type_id = dv.getInt32(0, true);
     const depth = dv.getUint32(4, true);
-    // TODO: make this work with external nested array/nullable stuff
     if (type_id < 0) {
         if (internal.i !== -1) {
             throw new Error("Expected array type");
@@ -118,6 +117,7 @@ export function materialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if ((type_id & 0x7fffffff) !== internal.f.m.i) {
             throw new Error("Type mismatch");
         }
+        // typedefs are negative
     } else if (type_id !== Math.abs(internal.i)) {
         throw new Error("Type mismatch");
     }
