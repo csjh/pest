@@ -105,45 +105,37 @@ export function serialize<T>(
                 return definitions[ty.i](dv, ptr, data, uint8);
             };
         }
+        if (ty.s)
+            return (dv, ptr, data, uint8) =>
+                ty.s!(dv, ptr, data, uint8, ty.f, reserve, get_serializer);
 
-        return (dv, ptr, data, uint8) => {
-            // skip over dynamic offset table
-            const start_of_offsets = ptr;
-            ptr += ty.y;
+        let fn = `r(p,999,d);var f,s=p;p+=${ty.y + ty.u};`;
 
-            // skip over null table
-            const start_of_nulls = ptr;
-            ptr += ty.u;
-
-            let dynamics = 0;
-            let nulls = 0;
-            let first_dyn = 0;
-            for (const name in ty.f) {
-                const type = ty.f[name];
-                if (!type.z) {
-                    if (dynamics !== 0) {
-                        dv.setUint32(
-                            start_of_offsets + (dynamics - 1) * 4,
-                            ptr - first_dyn,
-                            true
-                        );
-                    } else {
-                        first_dyn = ptr;
-                    }
-                    dynamics++;
-                }
-                if (data[name] != null) {
-                    ptr = get_serializer(type)(dv, ptr, data[name], uint8);
+        let dynamics = 0;
+        let nulls = 0;
+        for (const name in ty.f) {
+            const type = ty.f[name];
+            if (!type.z) {
+                if (dynamics !== 0) {
+                    fn += `d.setUint32(s+${(dynamics - 1) * 4},p-f,1);`;
                 } else {
-                    ptr += reserve(ptr, type.z, dv);
-                    uint8[start_of_nulls + (nulls >>> 3)] |= 1 << (nulls & 7);
+                    fn += `f=p;`;
                 }
-                if (type.n) {
-                    nulls++;
-                }
+                dynamics++;
             }
-            return ptr;
-        };
+            if (type.n) fn += `if(a.${name}!=null)`;
+            fn += `p=g(t.${name})(d,p,a.${name},u);`;
+            if (type.n)
+                fn += `else{p+=${type.z};u[s+${ty.y + (nulls >>> 3)}]|=${
+                    1 << (nulls & 7)
+                }}`;
+            if (type.n) nulls++;
+        }
+
+        fn += "return p";
+
+        ty.s = new Function("d", "p", "a", "u", "t", "r", "g", fn) as any;
+        return get_serializer(ty);
     }
 
     const _schema = schema as unknown as PestTypeInternal;

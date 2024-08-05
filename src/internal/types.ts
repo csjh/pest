@@ -1,4 +1,9 @@
-export type Serializer = (dv: DataView, ptr: number, data: any, uint8: Uint8Array) => number;
+export type Serializer = (
+    dv: DataView,
+    ptr: number,
+    data: any,
+    uint8: Uint8Array
+) => number;
 export type Deserializer = (ptr: number, dv: DataView) => unknown;
 
 export interface PestTypeInternal {
@@ -14,6 +19,16 @@ export interface PestTypeInternal {
     z: number;
     /** whether or not it can be null */
     n?: 1;
+    /** cached serializer */
+    s?: (
+        dv: DataView,
+        ptr: number,
+        data: any,
+        uint8: Uint8Array,
+        types: Record<string, PestTypeInternal>,
+        reserve: (ptr: number, size: number, dv: DataView) => number,
+        get_serializer: (ty: PestTypeInternal) => Serializer
+    ) => number;
     /** cached deserializer */
     d?: Deserializer;
     /** cached materializer */
