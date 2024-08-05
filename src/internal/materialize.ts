@@ -83,7 +83,7 @@ function get_materialized(
                 1 << (nulls & 7)
             }?null:`;
         }
-        if (!ty.z && dynamics !== 0) {
+        if (dynamics !== 0) {
             const table_offset = (dynamics - 1) * 4;
             fn += `g(p+${pos}+d.getUint32(p+${table_offset},1),d,f.${name}),`;
         } else {
