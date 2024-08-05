@@ -1,8 +1,12 @@
+export interface BufferWriters {
+    d: DataView;
+    u: Uint8Array;
+}
+
 export type Serializer = (
-    dv: DataView,
+    writers: BufferWriters,
     ptr: number,
-    data: any,
-    uint8: Uint8Array
+    data: any
 ) => number;
 export type Deserializer = (ptr: number, dv: DataView) => unknown;
 
@@ -21,12 +25,11 @@ export interface PestTypeInternal {
     n?: 1;
     /** cached serializer */
     s?: (
-        dv: DataView,
+        writers: BufferWriters,
         ptr: number,
         data: any,
-        uint8: Uint8Array,
         types: Record<string, PestTypeInternal>,
-        reserve: (ptr: number, size: number, dv: DataView) => number,
+        reserve: (ptr: number, size: number, writers: BufferWriters) => number,
         get_serializer: (ty: PestTypeInternal) => Serializer
     ) => number;
     /** cached deserializer */
