@@ -2,7 +2,6 @@
 
 import { describe, it, expect } from "bun:test";
 import { getSingleModule } from "./utils.js";
-import { materialize } from "../index.js";
 import { PestType } from "../internal/types.js";
 
 function leftEqual(left: unknown, right: unknown) {
@@ -40,14 +39,15 @@ function leftEqual(left: unknown, right: unknown) {
 
 describe("definitions", async () => {
     it("should stay intact with static structs", async () => {
-        const { serialize, deserialize, Coordinate, Locations } =
+        const { serialize, deserialize, materialize, Coordinate, Locations } =
             await getSingleModule(
                 new URL("./definitions/static.pest", import.meta.url)
             );
 
-        function mirror(data: unknown, schema: PestType<unknown>) {
+        function mirror<T>(data: T, schema: PestType<T>) {
+            // @ts-expect-error meh
             const serialized = serialize(data, schema);
-            return materialize(deserialize(serialized, schema));
+            return materialize(serialized, schema);
         }
 
         const coord = { x: 1, y: 2 };
@@ -73,13 +73,15 @@ describe("definitions", async () => {
     });
 
     it("should stay intact with dynamic structs", async () => {
-        const { serialize, deserialize, Map, Endpoint } = await getSingleModule(
-            new URL("./definitions/dynamic.pest", import.meta.url)
-        );
+        const { serialize, deserialize, materialize, Map, Endpoint } =
+            await getSingleModule(
+                new URL("./definitions/dynamic.pest", import.meta.url)
+            );
 
-        function mirror(data: unknown, schema: PestType<unknown>) {
+        function mirror<T>(data: T, schema: PestType<T>) {
+            // @ts-expect-error meh
             const serialized = serialize(data, schema);
-            return materialize(deserialize(serialized, schema));
+            return materialize(serialized, schema);
         }
 
         const map = {
@@ -146,15 +148,17 @@ describe("definitions", async () => {
         const {
             serialize,
             deserialize,
+            materialize,
             NullableCoordinate,
             LocationsMaybeNoWork
         } = await getSingleModule(
             new URL("./definitions/static.pest", import.meta.url)
         );
 
-        function mirror(data: unknown, schema: PestType<unknown>) {
+        function mirror<T>(data: T, schema: PestType<T>) {
+            // @ts-expect-error meh
             const serialized = serialize(data, schema);
-            return materialize(deserialize(serialized, schema));
+            return materialize(serialized, schema);
         }
 
         const coord = { x: 1, y: null };
@@ -186,14 +190,15 @@ describe("definitions", async () => {
     });
 
     it("should stay intact with dynamic structs", async () => {
-        const { serialize, deserialize, MapSketchyLocations } =
+        const { serialize, deserialize, materialize, MapSketchyLocations } =
             await getSingleModule(
                 new URL("./definitions/dynamic.pest", import.meta.url)
             );
 
-        function mirror(data: unknown, schema: PestType<unknown>) {
+        function mirror<T>(data: T, schema: PestType<T>) {
+            // @ts-expect-error meh
             const serialized = serialize(data, schema);
-            return materialize(deserialize(serialized, schema));
+            return materialize(serialized, schema);
         }
 
         const map = {

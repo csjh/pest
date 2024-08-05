@@ -12,7 +12,7 @@ import { ImportSpecifier, parse } from "acorn";
 import { print } from "esrap";
 import { compile } from "../plugins/compile.js";
 import * as primitives from "../internal/primitives.js";
-import { serialize, deserialize } from "../internal/index.js";
+import { serialize, deserialize, materialize } from "../internal/index.js";
 
 function adaptImportsExports(source: string): string {
     const ast = parse("const $$exports = {};" + source + ";return $$exports;", {
@@ -185,6 +185,7 @@ function adaptImportsExports(source: string): string {
 type ModuleExports = {
     serialize: typeof import("../internal/index.js").serialize;
     deserialize: typeof import("../internal/index.js").deserialize;
+    materialize: typeof import("../internal/index.js").materialize;
 } & Record<string, import("../internal/index.js").PestType<unknown>>;
 
 const AsyncFunction = async function () {}.constructor as FunctionConstructor;
@@ -194,6 +195,7 @@ export function getModule(source: string): Promise<ModuleExports> {
         "pest/internal": {
             serialize,
             deserialize,
+            materialize,
             ...primitives
         }
     });

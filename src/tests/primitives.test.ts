@@ -1,7 +1,6 @@
 /// <reference types="bun-types" />
 
 import { describe, it, expect } from "bun:test";
-import { materialize } from "../index.js";
 import {
     i8,
     i16,
@@ -19,6 +18,7 @@ import {
     RegExp,
     serialize,
     deserialize,
+    materialize,
     PestType
 } from "../internal/index.js";
 
@@ -26,7 +26,7 @@ function test_primitive<T>(data: NoInfer<T>, schema: PestType<T>) {
     const serialized = serialize(data as any, schema);
     const materialized = deserialize(serialized, schema);
     expect(materialized).toEqual(data);
-    expect(materialize(materialized)).toEqual(data);
+    expect(materialize(serialized, schema)).toEqual(data);
 }
 
 describe("primitives", () => {

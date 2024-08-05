@@ -62,7 +62,7 @@ export function compile(code: string, opts: CompileOptions): string {
         }
 
         return (
-            `export { serialize, deserialize } from "pest/internal";
+            `export { serialize, deserialize, materialize } from "pest/internal";
 import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp } from "pest/internal";
 ` +
             definitions
