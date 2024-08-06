@@ -57,48 +57,55 @@ const definitions = [
     (writers, ptr, data): number => definitions[12](writers, ptr,`${data.flags}\0${data.source}`)
 ] as const satisfies Serializer[];
 
-function get_serializer(ty: PestTypeInternal): Serializer {
-    if (ty.i === -1) {
-        return (writers, ptr, data) => {
-            // set length
-            reserve(ptr, 4, writers);
-            writers.d.setUint32(ptr, data.length, true);
-            ptr += 4;
+function serialize_array(
+    ty: PestTypeInternal,
+    writers: BufferWriters,
+    ptr: number,
+    data: any[]
+) {
+    // set length
+    reserve(ptr, 4, writers);
+    writers.d.setUint32(ptr, data.length, true);
+    ptr += 4;
 
-            // skip over dynamic offset table
-            const start_of_offsets = ptr;
-            if (!ty.e!.z) {
-                ptr += reserve(ptr, 4 * data.length, writers);
-            }
-
-            // skip over null table otherwise align if TypedArray is available
-            const start_of_nulls = ptr;
-            if (ty.e!.n) {
-                ptr += reserve(ptr, (data.length + 7) >>> 3, writers);
-            } else if (0 <= ty.e!.i && ty.e!.i < 10) {
-                ptr += -ptr & (ty.e!.z - 1);
-            }
-
-            const start_of_data = ptr;
-            const deserializer = get_serializer(ty.e!);
-            for (let i = 0; i < data.length; i++) {
-                if (!ty.e!.z) {
-                    writers.d.setUint32(
-                        start_of_offsets + 4 * i,
-                        ptr - start_of_data,
-                        true
-                    );
-                }
-                if (data[i] != null) {
-                    ptr = deserializer(writers, ptr, data[i]);
-                } else {
-                    writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
-                    ptr += reserve(ptr, ty.e!.z, writers);
-                }
-            }
-            return ptr;
-        };
+    // skip over dynamic offset table
+    const start_of_offsets = ptr;
+    if (!ty.z) {
+        ptr += reserve(ptr, 4 * data.length, writers);
     }
+
+    // skip over null table otherwise align if TypedArray is available
+    const start_of_nulls = ptr;
+    if (ty.n) {
+        ptr += reserve(ptr, (data.length + 7) >>> 3, writers);
+    } else if (0 <= ty.i && ty.i < 10) {
+        ptr += -ptr & (ty.z - 1);
+    }
+
+    const start_of_data = ptr;
+    const deserializer = get_serializer(ty);
+    for (let i = 0; i < data.length; i++) {
+        if (!ty.z) {
+            writers.d.setUint32(
+                start_of_offsets + 4 * i,
+                ptr - start_of_data,
+                true
+            );
+        }
+        if (data[i] != null) {
+            ptr = deserializer(writers, ptr, data[i]);
+        } else {
+            writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
+            ptr += reserve(ptr, ty.z, writers);
+        }
+    }
+    return ptr;
+}
+
+function get_serializer(ty: PestTypeInternal): Serializer {
+    if (ty.i === -1)
+        return (writers, ptr, data) =>
+            serialize_array(ty.e!, writers, ptr, data);
     if (ty.i < 0) return get_serializer(ty.e!);
     if (ty.i < definitions.length) {
         return (writers, ptr, data) => {
