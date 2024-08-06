@@ -103,19 +103,12 @@ function serialize_array(
 }
 
 function get_serializer(ty: PestTypeInternal): Serializer {
+    if (ty.s !== nofunc) return ty.s;
     if (ty.i === -1)
-        return (writers, ptr, data) =>
-            serialize_array(ty.e!, writers, ptr, data);
+        return (ty.s = (writers, ptr, data) =>
+            serialize_array(ty.e!, writers, ptr, data));
     if (ty.i < 0) return get_serializer(ty.e!);
-    if (ty.i < definitions.length) {
-        return (writers, ptr, data) => {
-            reserve(ptr, ty.z, writers);
-            return definitions[ty.i](writers, ptr, data);
-        };
-    }
-    if (ty.s !== nofunc)
-        return (writers, ptr, data) =>
-            ty.s(writers, ptr, data, ty.f, reserve, get_serializer);
+    if (ty.i < definitions.length) return definitions[ty.i];
 
     let fn = `r(p,999,w);var f,s=p;p+=${ty.y + ty.u};`;
 
@@ -142,8 +135,9 @@ function get_serializer(ty: PestTypeInternal): Serializer {
 
     fn += "return p";
 
-    ty.s = new Function("w", "p", "a", "t", "r", "g", fn) as any;
-    return get_serializer(ty);
+    const func = new Function("w", "p", "a", "t", "r", "g", fn) as any;
+    return (ty.s = (writers, ptr, data) =>
+        func(writers, ptr, data, ty.f, reserve, get_serializer));
 }
 
 export function serialize<T>(
@@ -152,7 +146,7 @@ export function serialize<T>(
 ): Uint8Array {
     const _schema = schema as unknown as PestTypeInternal;
 
-    const buffer = new ArrayBuffer(8);
+    const buffer = new ArrayBuffer(1024);
     const writers = {
         d: new DataView(buffer),
         u: new Uint8Array(buffer)

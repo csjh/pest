@@ -26,14 +26,7 @@ export interface PestTypeInternal {
     /** element type (for arrays) */
     e: PestTypeInternal | null;
     /** cached serializer */
-    s: (
-        writers: BufferWriters,
-        ptr: number,
-        data: any,
-        types: Record<string, PestTypeInternal>,
-        reserve: (ptr: number, size: number, writers: BufferWriters) => number,
-        get_serializer: (ty: PestTypeInternal) => Serializer
-    ) => number;
+    s: Serializer;
     /** cached deserializer */
     d: Deserializer;
     /** cached materializer */
