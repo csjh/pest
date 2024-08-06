@@ -82,6 +82,9 @@ function serialize_array(
         ptr += -ptr & (ty.z - 1);
     }
 
+    // reserve space for data (only actually matters for static types)
+    reserve(ptr, ty.z * data.length, writers);
+
     const start_of_data = ptr;
     const deserializer = get_serializer(ty);
     for (let i = 0; i < data.length; i++) {
@@ -96,7 +99,7 @@ function serialize_array(
             ptr = deserializer(writers, ptr, data[i]);
         } else {
             writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
-            ptr += reserve(ptr, ty.z, writers);
+            ptr += ty.z;
         }
     }
     return ptr;
