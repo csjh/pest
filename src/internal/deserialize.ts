@@ -1,3 +1,4 @@
+import { nofunc } from "./primitives.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
 interface Instance {
@@ -82,10 +83,9 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     }
 
     function get_deserializer(ty: PestTypeInternal): Deserializer {
-        if (ty.d) return ty.d;
-        if (ty.i === -1)
-            return (ty.d = (ptr, dv) => PestArray(ptr, ty.f.e, dv));
-        if (ty.i < 0) return (ty.d = get_deserializer(ty.f.e));
+        if (ty.d !== nofunc) return ty.d;
+        if (ty.i === -1) return (ty.d = (ptr, dv) => PestArray(ptr, ty.e!, dv));
+        if (ty.i < 0) return (ty.d = get_deserializer(ty.e!));
         if (ty.i < definitions.length) return (ty.d = definitions[ty.i]);
 
         // values start after the offset table
@@ -167,7 +167,9 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (depth !== internal.y) {
             throw new Error("Depth mismatch");
         }
-        if ((type_id & 0x7fffffff) !== internal.f.m.i) {
+        let e = internal;
+        while (e.i === -1) e = e.e!;
+        if ((type_id & 0x7fffffff) !== Math.abs(e.i)) {
             throw new Error("Type mismatch");
         }
     } else if (type_id !== Math.abs(internal.i)) {

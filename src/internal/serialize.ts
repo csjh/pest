@@ -1,4 +1,5 @@
-import {
+import { nofunc } from "./primitives.js";
+import type {
     AcceptBroad,
     BufferWriters,
     PestType,
@@ -25,7 +26,7 @@ const definitions = [
     (writers, ptr, data) => (writers.d.setUint8(ptr, data), ptr + 1), (writers, ptr, data) => (writers.d.setUint16(ptr, data, true), ptr + 2), (writers, ptr, data) => (writers.d.setUint32(ptr, data, true), ptr + 4), (writers, ptr, data) => (writers.d.setBigUint64(ptr, data, true), ptr + 8),
     (writers, ptr, data) => (writers.d.setFloat32(ptr, data, true), ptr + 4), (writers, ptr, data) => (writers.d.setFloat64(ptr, data, true), ptr + 8),
     (writers, ptr, data) => (writers.d.setUint8(ptr, data? 1 : 0), ptr + 1),
-    (writers, ptr, data) => (writers.d.setFloat64(ptr, data, true), ptr + 8),
+    (writers, ptr, data) => (writers.d.setFloat64(ptr, +data, true), ptr + 8),
     (writers, ptr, data) => {
         // i think this is enough for utf-16
         reserve(ptr, 4 + data.length * 3, writers);
@@ -66,22 +67,22 @@ function get_serializer(ty: PestTypeInternal): Serializer {
 
             // skip over dynamic offset table
             const start_of_offsets = ptr;
-            if (!ty.f.e.z) {
+            if (!ty.e!.z) {
                 ptr += reserve(ptr, 4 * data.length, writers);
             }
 
             // skip over null table otherwise align if TypedArray is available
             const start_of_nulls = ptr;
-            if (ty.f.e.n) {
+            if (ty.e!.n) {
                 ptr += reserve(ptr, (data.length + 7) >>> 3, writers);
-            } else if (0 <= ty.f.e.i && ty.f.e.i < 10) {
-                ptr += -ptr & (ty.f.e.z - 1);
+            } else if (0 <= ty.e!.i && ty.e!.i < 10) {
+                ptr += -ptr & (ty.e!.z - 1);
             }
 
             const start_of_data = ptr;
-            const deserializer = get_serializer(ty.f.e);
+            const deserializer = get_serializer(ty.e!);
             for (let i = 0; i < data.length; i++) {
-                if (!ty.f.e.z) {
+                if (!ty.e!.z) {
                     writers.d.setUint32(
                         start_of_offsets + 4 * i,
                         ptr - start_of_data,
@@ -92,22 +93,22 @@ function get_serializer(ty: PestTypeInternal): Serializer {
                     ptr = deserializer(writers, ptr, data[i]);
                 } else {
                     writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
-                    ptr += reserve(ptr, ty.f.e.z, writers);
+                    ptr += reserve(ptr, ty.e!.z, writers);
                 }
             }
             return ptr;
         };
     }
-    if (ty.i < 0) return get_serializer(ty.f.e);
+    if (ty.i < 0) return get_serializer(ty.e!);
     if (ty.i < definitions.length) {
         return (writers, ptr, data) => {
             reserve(ptr, ty.z, writers);
             return definitions[ty.i](writers, ptr, data);
         };
     }
-    if (ty.s)
+    if (ty.s !== nofunc)
         return (writers, ptr, data) =>
-            ty.s!(writers, ptr, data, ty.f, reserve, get_serializer);
+            ty.s(writers, ptr, data, ty.f, reserve, get_serializer);
 
     let fn = `r(p,999,w);var f,s=p;p+=${ty.y + ty.u};`;
 
@@ -151,7 +152,9 @@ export function serialize<T>(
     };
 
     if (_schema.i === -1) {
-        writers.d.setInt32(0, _schema.f.m.i | (1 << 31), true);
+        let e = _schema;
+        while (e.i === -1) e = e.e!;
+        writers.d.setInt32(0, Math.abs(e.i) | (1 << 31), true);
         writers.d.setUint32(4, _schema.y, true);
     } else {
         writers.d.setInt32(0, Math.abs(_schema.i), true);

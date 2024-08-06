@@ -1,4 +1,5 @@
-import { PestType, PestTypeInternal } from "./types.js";
+import { nofunc } from "./primitives.js";
+import type { PestType, PestTypeInternal } from "./types.js";
 
 const decoder = new TextDecoder();
 
@@ -64,10 +65,10 @@ function get_materialized(
     dv: DataView,
     ty: PestTypeInternal
 ): any {
-    if (ty.i === -1) return PestArray(ptr, dv, ty.f.e);
-    if (ty.i < 0) return get_materialized(ptr, dv, ty.f.e);
+    if (ty.i === -1) return PestArray(ptr, dv, ty.e!);
+    if (ty.i < 0) return get_materialized(ptr, dv, ty.e!);
     if (ty.i < definitions.length) return definitions[ty.i](ptr, dv);
-    if (ty.m) return ty.m(ptr, dv, ty.f, get_materialized);
+    if (ty.m !== nofunc) return ty.m(ptr, dv, ty.f, get_materialized);
 
     // values start after the offset table
     let pos = ty.y + ty.u;
@@ -114,7 +115,9 @@ export function materialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (depth !== internal.y) {
             throw new Error("Depth mismatch");
         }
-        if ((type_id & 0x7fffffff) !== internal.f.m.i) {
+        let e = internal;
+        while (e.i === -1) e = e.e!;
+        if ((type_id & 0x7fffffff) !== Math.abs(e.i)) {
             throw new Error("Type mismatch");
         }
         // typedefs are negative

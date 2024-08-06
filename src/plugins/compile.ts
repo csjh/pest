@@ -63,7 +63,7 @@ export function compile(code: string, opts: CompileOptions): string {
 
         return (
             `export { serialize, deserialize, materialize } from "pest/internal";
-import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp } from "pest/internal";
+import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolean, Date, string, RegExp, nofunc } from "pest/internal";
 ` +
             definitions
                 .map((def, i) => {
@@ -71,7 +71,15 @@ import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolea
                         return `
 export const ${def.name} = {
     i: -${i + primitives},
-    f: { e: ${typeToJS(def.ty)} }
+    y: 0,
+    u: 0,
+    f: {},
+    z: 0,
+    n: 0,
+    e: ${typeToJS(def.ty)},
+    s: nofunc,
+    d: nofunc,
+    m: nofunc
 };`;
                     } else if (def.type === "interface") {
                         const num_dynamics = Object.values(def.members)
@@ -92,7 +100,12 @@ export const ${def.name} = {
         .sort((a, b) => get_sizeof(b[1]) - get_sizeof(a[1]))
         .map(([k, v]) => `${k}: ${typeToJS(v)}`)
         .join(", ")} },
-    z: ${sizes[def.name]}
+    z: ${sizes[def.name]},
+    n: 0,
+    e: null,
+    s: nofunc,
+    d: nofunc,
+    m: nofunc
 };`;
                     }
                 })

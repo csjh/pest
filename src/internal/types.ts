@@ -22,9 +22,11 @@ export interface PestTypeInternal {
     /** sizeof */
     z: number;
     /** whether or not it can be null */
-    n?: 1;
+    n: 1 | 0;
+    /** element type (for arrays) */
+    e: PestTypeInternal | null;
     /** cached serializer */
-    s?: (
+    s: (
         writers: BufferWriters,
         ptr: number,
         data: any,
@@ -33,9 +35,9 @@ export interface PestTypeInternal {
         get_serializer: (ty: PestTypeInternal) => Serializer
     ) => number;
     /** cached deserializer */
-    d?: Deserializer;
+    d: Deserializer;
     /** cached materializer */
-    m?: (
+    m: (
         ptr: number,
         dv: DataView,
         fields: Record<string, PestTypeInternal>,
