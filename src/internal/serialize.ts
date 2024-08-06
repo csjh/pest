@@ -127,13 +127,13 @@ function get_serializer(ty: PestTypeInternal): Serializer {
             }
             dynamics++;
         }
-        if (type.n) fn += `if(a.${name}!=null)`;
+        if (type.n) {
+            fn += `a.${name}==null?(p+=${type.z},w.u[s+${
+                ty.y + (nulls >>> 3)
+            }]|=${1 << (nulls & 7)}):`;
+            nulls++;
+        }
         fn += `p=g(t.${name})(w,p,a.${name});`;
-        if (type.n)
-            fn += `else{p+=${type.z};w.u[s+${ty.y + (nulls >>> 3)}]|=${
-                1 << (nulls & 7)
-            }}`;
-        if (type.n) nulls++;
     }
 
     fn += "return p";
