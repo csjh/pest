@@ -70,12 +70,14 @@ function get_serializer(ty: PestTypeInternal): Serializer {
     if (ty.s !== nofunc) return ty.s;
     if (ty.i < 0) return get_serializer(ty.e!);
 
-    let fn = `r(p,999,w);var f,s=p;p+=${ty.y + ty.u};`;
+    let fn = `var f,s=p;p+=${ty.y + ty.u};`;
 
     let dynamics = 0;
     let nulls = 0;
+    let static_size = 0;
     for (const name in ty.f) {
         const type = ty.f[name];
+        static_size += type.z;
         if (!type.z) {
             if (dynamics !== 0) {
                 fn += `w.d.setUint32(s+${(dynamics - 1) * 4},p-f,1);`;
@@ -93,7 +95,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
         fn += `p=g(t.${name})(w,p,a.${name});`;
     }
 
-    fn += "return p";
+    fn = `r(p,${static_size},w);${fn}return p`;
 
     const func = new Function("w", "p", "a", "t", "r", "g", fn) as any;
     return (ty.s = (writers, ptr, data) =>
