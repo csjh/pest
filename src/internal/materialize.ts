@@ -83,9 +83,10 @@ function get_materialized(
     return ty.m!(ptr, dv, ty.f, get_materialized);
 }
 
-export function materialize<T>(msg: Uint8Array, schema: PestType<T>): T {
+export function materialize<T>(msg: Uint8Array | ArrayBuffer, schema: PestType<T>): T {
     const internal = schema as unknown as PestTypeInternal;
-    const buffer = msg.buffer;
+    // @ts-expect-error
+    const buffer = (msg.buffer ?? msg) as ArrayBuffer;
     const dv = new DataView(buffer);
 
     const type_id = dv.getInt32(0, true);
