@@ -1,6 +1,6 @@
 {
     "type": "module",
-    "name": "pest",
+    "name": "pestjs",
     "version": "0.0.1",
     "description": "a serialization format for the web",
     "main": "src/index.js",
