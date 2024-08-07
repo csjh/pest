@@ -18,7 +18,7 @@ interface LocationsMaybeNoWork {
     work: NullableCoordinate?;
 }
 
-typedef NullableCoordArrayArray = Coordinate[]?[];
-typedef NullableCoordArray = Coordinate?[];
-typedef NullableLocations = Locations?[][];
-typedef NullableLocationArray = Locations?[];
+type NullableCoordArrayArray = Coordinate[]?[];
+type NullableCoordArray = Coordinate?[];
+type NullableLocations = Locations?[][];
+type NullableLocationArray = Locations?[];

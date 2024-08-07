@@ -31,5 +31,5 @@ interface Endpoint {
     accessed_at: Date;
 }
 
-typedef NullableMapArrayArray = Map[]?[];
-typedef NullableMapArray = Map?[];
+type NullableMapArrayArray = Map[]?[];
+type NullableMapArray = Map?[];

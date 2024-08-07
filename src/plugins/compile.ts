@@ -49,7 +49,7 @@ export function compile(code: string, opts: CompileOptions): string {
         for (const def of definitions) {
             let size = 0;
             let nulls = 0;
-            if (def.type === "typedef") {
+            if (def.type === "type") {
                 sizes[def.name] = get_sizeof(def.ty);
             } else if (def.type === "interface") {
                 for (const member of Object.values(def.members)) {
@@ -67,7 +67,7 @@ import { array, nullable, i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, boolea
 ` +
             definitions
                 .map((def, i) => {
-                    if (def.type === "typedef") {
+                    if (def.type === "type") {
                         return `
 export const ${def.name} = {
     i: -${i + primitives},
@@ -202,7 +202,7 @@ interface Interface {
 }
 
 interface Typedef {
-    type: "typedef";
+    type: "type";
     name: string;
     ty: Type;
 }
@@ -273,20 +273,20 @@ function parse(code: string) {
             skip();
 
             module.push({ type: "interface", name, members });
-        } else if (ident === "typedef") {
+        } else if (ident === "type") {
             const name = read_identifier();
             expect("=");
             const ty = read_type();
             if (ty.type === "nullable") {
                 throw new Error(
-                    `typedef ${name} is invalid, only struct members or array elements can be nullable`
+                    `type ${name} is invalid, only struct members or array elements can be nullable`
                 );
             }
             expect(";");
-            module.push({ type: "typedef", name, ty });
+            module.push({ type: "type", name, ty });
         } else {
             throw new Error(
-                `Unexpected identifier: ${ident}, expected interface or typedef`
+                `Unexpected identifier: ${ident}, expected interface or type`
             );
         }
     }
