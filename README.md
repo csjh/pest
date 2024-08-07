@@ -16,7 +16,7 @@ npm install pestjs
 ```
 ```bash
 # bun
-bun add pestjs
+bun install pestjs
 ```
 
 Now simply add the vite plugin to your `vite.config.js`:
