@@ -1,12 +1,15 @@
 {
     "type": "module",
     "name": "pestjs",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "a serialization format for the web",
     "main": "src/index.js",
-    "scripts": {},
+    "scripts": {
+        "prepublishOnly": "tsc"
+    },
     "author": "csjh",
     "license": "MIT",
+    "files": ["build"],
     "exports": {
         ".": {
             "import": "./build/index.js",
