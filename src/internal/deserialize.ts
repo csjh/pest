@@ -6,7 +6,10 @@ interface Instance {
     $d: DataView;
 }
 
-export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
+export function deserialize<T>(
+    msg: Uint8Array | ArrayBuffer,
+    schema: PestType<T>
+): T {
     function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
         const len = dv.getUint32(ptr, true);
         ptr += 4;
@@ -137,7 +140,8 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
     }
 
     const internal = schema as unknown as PestTypeInternal;
-    const buffer = msg.buffer;
+    // @ts-expect-error cry
+    const buffer = (msg.buffer ?? msg) as ArrayBuffer;
     const dv = new DataView(buffer);
 
     const type_id = dv.getInt32(0, true);
