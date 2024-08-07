@@ -6,7 +6,7 @@ Pest is a fast de/serialization format meant for the web. It has a very small fo
 
 Depending on the type and environment, serialization can be up to 3x faster than JSON, and deserialization can be up to 2x faster. It also takes significantly less space than JSON, depending on the shape of the data (almost 3x on uncompresssed payloads in one example).
 
-Pest also makes sure your data is always in the shape you expect, and is easy to use with TypeScript. It also allows for using only a view over your data, which can be useful for reading large payloads with 0 parsing overhead.
+Pest also makes sure your data is always in the shape you expect, and is easy to use with TypeScript. It also allows for using only a view over your data, which can be useful for reading large payloads with 0 parsing overhead. To access this functionality, replace `materialize` with `deserialize` in the examples below.
 
 ## Installation
 
