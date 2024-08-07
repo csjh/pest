@@ -1,22 +1,6 @@
 import { nofunc } from "./primitives.js";
 import type { PestType, PestTypeInternal } from "./types.js";
 
-const decoder = new TextDecoder();
-
-// prettier-ignore
-const definitions = [
-    (ptr, dv) => dv.getInt8(ptr),  (ptr, dv) => dv.getInt16(ptr, true),  (ptr, dv) => dv.getInt32(ptr, true),  (ptr, dv) => dv.getBigInt64(ptr, true),
-    (ptr, dv) => dv.getUint8(ptr), (ptr, dv) => dv.getUint16(ptr, true), (ptr, dv) => dv.getUint32(ptr, true), (ptr, dv) => dv.getBigUint64(ptr, true),
-    (ptr, dv) => dv.getFloat32(ptr, true), (ptr, dv) => dv.getFloat64(ptr, true),
-    (ptr, dv) => dv.getUint8(ptr) !== 0,
-    (ptr, dv) => new Date(dv.getFloat64(ptr, true)),
-    (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))),
-    ((ptr, dv) => {
-        const [flags, source] = definitions[12](ptr, dv).split('\0', 2);
-        return new RegExp(source, flags);
-    }),
-] as const satisfies ((ptr: number, dv: DataView) => any)[];
-
 const TypedArrays = [
     Int8Array,
     Int16Array,
@@ -29,7 +13,7 @@ const TypedArrays = [
     Float32Array,
     Float64Array
 ];
-function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
+export function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
     const len = dv.getUint32(ptr, true);
     ptr += 4;
     if (0 <= ty.i && ty.i < 10 && !ty.n) {
@@ -65,10 +49,8 @@ function get_materialized(
     dv: DataView,
     ty: PestTypeInternal
 ): any {
-    if (ty.i === -1) return PestArray(ptr, dv, ty.e!);
-    if (ty.i < 0) return get_materialized(ptr, dv, ty.e!);
-    if (ty.i < definitions.length) return definitions[ty.i](ptr, dv);
     if (ty.m !== nofunc) return ty.m(ptr, dv, ty.f, get_materialized);
+    if (ty.i < 0) return get_materialized(ptr, dv, ty.e!);
 
     // values start after the offset table
     let pos = ty.y + ty.u;

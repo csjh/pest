@@ -6,23 +6,7 @@ interface Instance {
     $d: DataView;
 }
 
-const decoder = new TextDecoder();
-
 export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
-    // prettier-ignore
-    const definitions = [
-        (ptr, dv) => dv.getInt8(ptr),  (ptr, dv) => dv.getInt16(ptr, true),  (ptr, dv) => dv.getInt32(ptr, true),  (ptr, dv) => dv.getBigInt64(ptr, true),
-        (ptr, dv) => dv.getUint8(ptr), (ptr, dv) => dv.getUint16(ptr, true), (ptr, dv) => dv.getUint32(ptr, true), (ptr, dv) => dv.getBigUint64(ptr, true),
-        (ptr, dv) => dv.getFloat32(ptr, true), (ptr, dv) => dv.getFloat64(ptr, true),
-        (ptr, dv) => dv.getUint8(ptr) !== 0,
-        (ptr, dv) => new Date(dv.getFloat64(ptr, true)),
-        (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))),
-        ((ptr, dv) => {
-            const [flags, source] = definitions[12](ptr, dv).split('\0', 2);
-            return new RegExp(source, flags);
-        }) as Deserializer,
-    ] as const satisfies Deserializer[];
-
     function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
         const len = dv.getUint32(ptr, true);
         ptr += 4;
@@ -86,7 +70,6 @@ export function deserialize<T>(msg: Uint8Array, schema: PestType<T>): T {
         if (ty.d !== nofunc) return ty.d;
         if (ty.i === -1) return (ty.d = (ptr, dv) => PestArray(ptr, ty.e!, dv));
         if (ty.i < 0) return (ty.d = get_deserializer(ty.e!));
-        if (ty.i < definitions.length) return (ty.d = definitions[ty.i]);
 
         // values start after the offset table
         let pos = ty.y + ty.u;

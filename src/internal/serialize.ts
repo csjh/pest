@@ -7,9 +7,7 @@ import type {
     Serializer
 } from "./types.js";
 
-const encoder = new TextEncoder();
-
-function reserve(ptr: number, size: number, writers: BufferWriters) {
+export function reserve(ptr: number, size: number, writers: BufferWriters) {
     while (ptr + size >= writers.u.length) {
         const len = writers.u.length;
         // @ts-expect-error
@@ -20,44 +18,7 @@ function reserve(ptr: number, size: number, writers: BufferWriters) {
     return size;
 }
 
-// prettier-ignore
-const definitions = [
-    (writers, ptr, data) => (writers.d.setInt8(ptr, data), ptr + 1),  (writers, ptr, data) => (writers.d.setInt16(ptr, data, true), ptr + 2),  (writers, ptr, data) => (writers.d.setInt32(ptr, data, true), ptr + 4),  (writers, ptr, data) => (writers.d.setBigInt64(ptr, data, true), ptr + 8),
-    (writers, ptr, data) => (writers.d.setUint8(ptr, data), ptr + 1), (writers, ptr, data) => (writers.d.setUint16(ptr, data, true), ptr + 2), (writers, ptr, data) => (writers.d.setUint32(ptr, data, true), ptr + 4), (writers, ptr, data) => (writers.d.setBigUint64(ptr, data, true), ptr + 8),
-    (writers, ptr, data) => (writers.d.setFloat32(ptr, data, true), ptr + 4), (writers, ptr, data) => (writers.d.setFloat64(ptr, data, true), ptr + 8),
-    (writers, ptr, data) => (writers.d.setUint8(ptr, data? 1 : 0), ptr + 1),
-    (writers, ptr, data) => (writers.d.setFloat64(ptr, +data, true), ptr + 8),
-    (writers, ptr, data) => {
-        // i think this is enough for utf-16
-        reserve(ptr, 4 + data.length * 3, writers);
-
-        // stolen from [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen/blob/cf186acf48c4b0649934d19ba1aa18282bd2ec44/crates/cli/tests/reference/string-arg.js#L46)
-        let length = 0;
-        for (; length < data.length; length++) {
-            const code = data.charCodeAt(length);
-            if (code > 0x7f) break;
-            writers.u[ptr + 4 + length] = code;
-        }
-    
-        if (length !== data.length) {
-            if (length !== 0) {
-                data = data.slice(length);
-            }
-    
-            length += encoder.encodeInto(
-                data,
-                writers.u.subarray(ptr + 4 + length, ptr + data.length)
-            ).written;
-        }
-    
-        writers.d.setUint32(ptr, length, true);
-        return ptr + 4 + length;
-    },
-    // serialized as string
-    (writers, ptr, data): number => definitions[12](writers, ptr,`${data.flags}\0${data.source}`)
-] as const satisfies Serializer[];
-
-function serialize_array(
+export function serialize_array(
     ty: PestTypeInternal,
     writers: BufferWriters,
     ptr: number,
@@ -107,11 +68,7 @@ function serialize_array(
 
 function get_serializer(ty: PestTypeInternal): Serializer {
     if (ty.s !== nofunc) return ty.s;
-    if (ty.i === -1)
-        return (ty.s = (writers, ptr, data) =>
-            serialize_array(ty.e!, writers, ptr, data));
     if (ty.i < 0) return get_serializer(ty.e!);
-    if (ty.i < definitions.length) return definitions[ty.i];
 
     let fn = `r(p,999,w);var f,s=p;p+=${ty.y + ty.u};`;
 
