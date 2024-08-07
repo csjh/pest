@@ -12,11 +12,11 @@ Pest also makes sure your data is always in the shape you expect, and is easy to
 
 ```bash
 # npm
-npm install pest.js
+npm install pestjs
 ```
 ```bash
 # bun
-bun add pest.js
+bun add pestjs
 ```
 
 Now simply add the vite plugin to your `vite.config.js`:
