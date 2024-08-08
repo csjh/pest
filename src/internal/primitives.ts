@@ -13,7 +13,7 @@ function primitive(i: number, size: number, s: Serializer, d: Deserializer): Pes
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-function decode_string(w: BufferWriters, ptr: number, data: string): number {
+function encode_string(w: BufferWriters, ptr: number, data: string): number {
     // i think this is enough for utf-16
     reserve(ptr, 4 + data.length * 3, w);
 
@@ -54,8 +54,8 @@ export const f32 =     primitive( 8, 4, (w, ptr, data) => (w.d.setFloat32  (ptr,
 export const f64 =     primitive( 9, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, data, true),  ptr + 8), (ptr, dv) => dv.getFloat64  (ptr, true))         as PestType<number>;
 export const boolean = primitive(10, 1, (w, ptr, data) => (w.d.setUint8    (ptr, data? 1 : 0), ptr + 1), (ptr, dv) => dv.getUint8    (ptr) !== 0)         as PestType<boolean>;
 const _Date =          primitive(11, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, +data, true), ptr + 8), (ptr, dv) => new Date(dv.getFloat64(ptr, true))) as PestType<Date>;
-export const string =  primitive(12, 0, decode_string, (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))))          as PestType<string>;
-const _RegExp =        primitive(13, 0, (w, ptr, data): number => decode_string(w, ptr,`${data.flags}\0${data.source}`), (ptr, dv) => {
+export const string =  primitive(12, 0, encode_string, (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))))          as PestType<string>;
+const _RegExp =        primitive(13, 0, (w, ptr, data): number => encode_string(w, ptr,`${data.flags}\0${data.source}`), (ptr, dv) => {
     const [flags, source] = (string as any).m(ptr, dv).split('\0', 2);
     return globalThis.RegExp(source, flags);
 }) as PestType<RegExp>;
