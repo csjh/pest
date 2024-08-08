@@ -17,12 +17,14 @@ function decode_string(w: BufferWriters, ptr: number, data: string): number {
     // i think this is enough for utf-16
     reserve(ptr, 4 + data.length * 3, w);
 
+    ptr += 4;
+
     // stolen from [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen/blob/cf186acf48c4b0649934d19ba1aa18282bd2ec44/crates/cli/tests/reference/string-arg.js#L46)
     let length = 0;
     for (; length < data.length; length++) {
         const code = data.charCodeAt(length);
         if (code > 0x7f) break;
-        w.u[ptr + 4 + length] = code;
+        w.u[ptr + length] = code;
     }
 
     if (length !== data.length) {
@@ -32,12 +34,12 @@ function decode_string(w: BufferWriters, ptr: number, data: string): number {
 
         length += encoder.encodeInto(
             data,
-            w.u.subarray(ptr + 4 + length, ptr + data.length)
+            w.u.subarray(ptr + length, ptr + length + data.length * 3)
         ).written;
     }
 
-    w.d.setUint32(ptr, length, true);
-    return ptr + 4 + length;
+    w.d.setUint32(ptr - 4, length, true);
+    return ptr + length;
 }
 
 export const i8 =      primitive( 0, 1, (w, ptr, data) => (w.d.setInt8     (ptr, data),        ptr + 1), (ptr, dv) => dv.getInt8     (ptr)      )         as PestType<number>;
