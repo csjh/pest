@@ -70,6 +70,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
     if (ty.s !== nofunc) return ty.s;
     if (ty.i < 0) return (ty.s = get_serializer(ty.e!));
 
+    let prelude = "var _";
     let fn = `var f,s=p;p+=${ty.y + ty.u};`;
 
     let dynamics = 0;
@@ -94,14 +95,13 @@ function get_serializer(ty: PestTypeInternal): Serializer {
             }]|=${1 << (nulls & 7)}):`;
             nulls++;
         }
-        fn += `p=t.${name}.s(w,p,a.${name});`;
+        prelude += `,_${name}=t.${name}.s`;
+        fn += `p=_${name}(w,p,a.${name});`;
     }
 
-    fn = `r(p,${static_size},w);${fn}return p`;
+    fn = `${prelude};return(w,p,a)=>{r(p,${static_size},w);${fn}return p}`;
 
-    const func = new Function("w", "p", "a", "t", "r", fn) as any;
-    return (ty.s = (writers, ptr, data) =>
-        func(writers, ptr, data, ty.f, reserve));
+    return (ty.s = new Function("t", "r", fn)(ty.f, reserve));
 }
 
 export function serialize<T>(
