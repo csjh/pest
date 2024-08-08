@@ -68,7 +68,7 @@ export function serialize_array(
 
 function get_serializer(ty: PestTypeInternal): Serializer {
     if (ty.s !== nofunc) return ty.s;
-    if (ty.i < 0) return get_serializer(ty.e!);
+    if (ty.i < 0) return (ty.s = get_serializer(ty.e!));
 
     let fn = `var f,s=p;p+=${ty.y + ty.u};`;
 
@@ -77,6 +77,8 @@ function get_serializer(ty: PestTypeInternal): Serializer {
     let static_size = 0;
     for (const name in ty.f) {
         const type = ty.f[name];
+        get_serializer(type); // ensure serializer is cached
+
         static_size += type.z;
         if (!type.z) {
             if (dynamics !== 0) {
@@ -92,14 +94,14 @@ function get_serializer(ty: PestTypeInternal): Serializer {
             }]|=${1 << (nulls & 7)}):`;
             nulls++;
         }
-        fn += `p=g(t.${name})(w,p,a.${name});`;
+        fn += `p=t.${name}.s(w,p,a.${name});`;
     }
 
     fn = `r(p,${static_size},w);${fn}return p`;
 
-    const func = new Function("w", "p", "a", "t", "r", "g", fn) as any;
+    const func = new Function("w", "p", "a", "t", "r", fn) as any;
     return (ty.s = (writers, ptr, data) =>
-        func(writers, ptr, data, ty.f, reserve, get_serializer));
+        func(writers, ptr, data, ty.f, reserve));
 }
 
 export function serialize<T>(
