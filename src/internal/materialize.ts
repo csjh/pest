@@ -73,8 +73,7 @@ function get_materialized(
             fn += `g(p+${pos},d,f.${name}),`;
         }
         pos += field.z;
-        // @ts-expect-error complain to brendan eich
-        dynamics += !field.z;
+        if (!field.z) dynamics++;
         if (field.n) nulls++;
     }
     fn += `}`;
