@@ -9,6 +9,7 @@ export type Serializer = (
     data: any
 ) => number;
 export type Deserializer = (ptr: number, dv: DataView) => unknown;
+export type Materializer = (ptr: number, dv: DataView) => unknown;
 
 export interface PestTypeInternal {
     /** id */
@@ -30,16 +31,7 @@ export interface PestTypeInternal {
     /** cached deserializer */
     d: Deserializer;
     /** cached materializer */
-    m: (
-        ptr: number,
-        dv: DataView,
-        fields: Record<string, PestTypeInternal>,
-        get_materializer: (
-            ptr: number,
-            dv: DataView,
-            ty: PestTypeInternal
-        ) => any
-    ) => any;
+    m: Materializer;
 }
 
 type Prettify<T> = {

@@ -1,5 +1,5 @@
 import { nofunc } from "./primitives.js";
-import type { PestType, PestTypeInternal } from "./types.js";
+import type { Materializer, PestType, PestTypeInternal } from "./types.js";
 
 const TypedArrays = [
     Int8Array,
@@ -23,6 +23,7 @@ export function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
     }
 
     const arr = Array(len);
+    get_materialized(ty); // ensure materializer is cached
     for (let i = 0; i < len; i++) {
         if (
             ty.n &&
@@ -30,59 +31,60 @@ export function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
         ) {
             arr[i] = null;
         } else {
-            arr[i] = get_materialized(
+            arr[i] = ty.m(
                 ptr +
                     (ty.n ? (len + 7) >>> 3 : 0) +
                     (ty.z
                         ? i * ty.z
                         : len * 4 + dv.getUint32(ptr + i * 4, true)),
-                dv,
-                ty
+                dv
             );
         }
     }
     return arr;
 }
 
-function get_materialized(
-    ptr: number,
-    dv: DataView,
-    ty: PestTypeInternal
-): any {
-    if (ty.m !== nofunc) return ty.m(ptr, dv, ty.f, get_materialized);
-    if (ty.i < 0) return get_materialized(ptr, dv, ty.e!);
+function get_materialized(ty: PestTypeInternal): Materializer {
+    if (ty.m !== nofunc) return ty.m;
+    if (ty.i < 0) return (ty.m = get_materialized(ty.e!));
 
     // values start after the offset table
     let pos = ty.y + ty.u;
     let dynamics = 0;
     let nulls = 0;
 
-    let fn = `return{`;
+    let prelude = "var _";
+    let fn = `{`;
     for (const name in ty.f) {
         const field = ty.f[name];
+        get_materialized(field); // ensure materializer is cached
         fn += `${name}:`;
         if (field.n) {
             fn += `d.getUint8(p+${ty.y + (nulls >>> 3)})&${
                 1 << (nulls & 7)
             }?null:`;
         }
+        prelude += `,_${name}=f.${name}.m`;
         if (dynamics !== 0) {
             const table_offset = (dynamics - 1) * 4;
-            fn += `g(p+${pos}+d.getUint32(p+${table_offset},1),d,f.${name}),`;
+            fn += `_${name}(p+${pos}+d.getUint32(p+${table_offset},1),d),`;
         } else {
-            fn += `g(p+${pos},d,f.${name}),`;
+            fn += `_${name}(p+${pos},d),`;
         }
         pos += field.z;
         if (!field.z) dynamics++;
         if (field.n) nulls++;
     }
     fn += `}`;
+    fn = `${prelude};return(p,d)=>(${fn})`;
 
-    ty.m = new Function("p", "d", "f", "g", fn) as unknown as (typeof ty)["m"];
-    return ty.m!(ptr, dv, ty.f, get_materialized);
+    return (ty.m = new Function("f", "g", fn)(ty.f, get_materialized));
 }
 
-export function materialize<T>(msg: Uint8Array | ArrayBuffer, schema: PestType<T>): T {
+export function materialize<T>(
+    msg: Uint8Array | ArrayBuffer,
+    schema: PestType<T>
+): T {
     const internal = schema as unknown as PestTypeInternal;
     // @ts-expect-error
     const buffer = (msg.buffer ?? msg) as ArrayBuffer;
@@ -107,5 +109,5 @@ export function materialize<T>(msg: Uint8Array | ArrayBuffer, schema: PestType<T
         throw new Error("Type mismatch");
     }
     // 8 = skip over type id and depth
-    return get_materialized(8, dv, internal) as T;
+    return get_materialized(internal)(8, dv) as T;
 }
