@@ -95,6 +95,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
             }]|=${1 << (nulls & 7)}):`;
             nulls++;
         }
+        // TODO: experiment more with inlining
         prelude += `,_${name}=t.${name}.s`;
         fn += `p=_${name}(w,p,a.${name});`;
     }
