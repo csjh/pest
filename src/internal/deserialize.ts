@@ -1,10 +1,27 @@
 import { nofunc } from "./primitives.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
-interface Instance {
-    $: number;
-    _: DataView;
-}
+type ProxyArray = [number, (i: number) => unknown];
+
+const handler = {
+    get(target, prop, receiver) {
+        if (prop === "length") {
+            return target[0];
+        } else if (typeof prop === "string" && !isNaN(+prop)) {
+            return target[1](+prop);
+        }
+        // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
+        return target[prop]?.bind(receiver);
+    },
+    has(target, prop) {
+        return (
+            prop in target || (typeof prop === "string" && +prop < target[0])
+        );
+    },
+    getPrototypeOf() {
+        return Array.prototype;
+    }
+} satisfies ProxyHandler<ProxyArray>;
 
 export function deserialize<T>(
     msg: Uint8Array | ArrayBuffer,
@@ -31,42 +48,27 @@ export function deserialize<T>(
         }
 
         const deserializer = get_deserializer(ty);
-        return new Proxy([], {
-            get(target, prop, receiver) {
-                if (prop === "length") {
-                    return len;
-                } else if (typeof prop === "string" && !isNaN(+prop)) {
-                    if (
-                        ty.n &&
-                        dv.getUint8(
-                            ptr + (ty.z ? 0 : len * 4) + (+prop >>> 3)
-                        ) &
-                            (1 << (+prop & 7))
-                    )
-                        return null;
+        const arr = [
+            len,
+            (i: number) => {
+                if (
+                    ty.n &&
+                    dv.getUint8(ptr + (ty.z ? 0 : len * 4) + (i >>> 3)) &
+                        (1 << (i & 7))
+                )
+                    return null;
 
-                    return deserializer(
-                        ptr +
-                            (ty.n ? (len + 7) >>> 3 : 0) +
-                            (ty.z
-                                ? +prop * ty.z
-                                : len * 4 +
-                                  dv.getUint32(ptr + +prop * 4, true)),
-                        dv
-                    );
-                }
-                // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
-                return target[prop]?.bind(receiver);
-            },
-            has(target, prop) {
-                return (
-                    prop in target || (typeof prop === "string" && +prop < len)
+                return deserializer(
+                    ptr +
+                        (ty.n ? (len + 7) >>> 3 : 0) +
+                        (ty.z
+                            ? i * ty.z
+                            : len * 4 + dv.getUint32(ptr + i * 4, true)),
+                    dv
                 );
-            },
-            getPrototypeOf() {
-                return Array.prototype;
             }
-        });
+        ];
+        return new Proxy(arr, handler);
     }
 
     function get_deserializer(ty: PestTypeInternal): Deserializer {
