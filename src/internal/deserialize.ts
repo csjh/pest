@@ -23,104 +23,102 @@ const handler = {
     }
 } satisfies ProxyHandler<ProxyArray>;
 
+function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
+    const len = dv.getUint32(ptr, true);
+    ptr += 4;
+    if (0 <= ty.i && ty.i < 10 && !ty.n) {
+        // align to ty.z bytes
+        ptr += -ptr & (ty.z - 1);
+        return new [
+            Int8Array,
+            Int16Array,
+            Int32Array,
+            BigInt64Array,
+            Uint8Array,
+            Uint16Array,
+            Uint32Array,
+            BigUint64Array,
+            Float32Array,
+            Float64Array
+        ][ty.i](dv.buffer, ptr, len);
+    }
+
+    const deserializer = get_deserializer(ty);
+    const arr = [
+        len,
+        (i: number) => {
+            if (
+                ty.n &&
+                dv.getUint8(ptr + (ty.z ? 0 : len * 4) + (i >>> 3)) &
+                    (1 << (i & 7))
+            )
+                return null;
+
+            return deserializer(
+                ptr +
+                    (ty.n ? (len + 7) >>> 3 : 0) +
+                    (ty.z
+                        ? i * ty.z
+                        : len * 4 + dv.getUint32(ptr + i * 4, true)),
+                dv
+            );
+        }
+    ];
+    return new Proxy(arr, handler);
+}
+
+function get_deserializer(ty: PestTypeInternal): Deserializer {
+    if (ty.d !== nofunc) return ty.d;
+    if (ty.i === -1) return (ty.d = (ptr, dv) => PestArray(ptr, ty.e!, dv));
+    if (ty.i < 0) return (ty.d = get_deserializer(ty.e!));
+
+    // values start after the offset table
+    let pos = ty.y + ty.u;
+    let dynamics = 0;
+    let nulls = 0;
+
+    const creator: Record<string, PropertyDescriptor> = {};
+
+    for (const name in ty.f) {
+        const field = ty.f[name];
+        creator[name] = {
+            get: new Function(
+                "d",
+                `return function(){return ${
+                    field.n
+                        ? `(this._.getUint8(this.$+${ty.y + (nulls >>> 3)})&${
+                              1 << (nulls & 7)
+                          })?null:`
+                        : ""
+                }d(this.$+${pos}${
+                    !ty.z && dynamics !== 0
+                        ? `+this._.getUint32(this.$+${(dynamics - 1) * 4},!0)`
+                        : ""
+                },this._)}`
+            )(get_deserializer(field)),
+            enumerable: true
+        };
+        pos += field.z;
+        // @ts-expect-error complain to brendan eich
+        dynamics += !field.z;
+        if (field.n) nulls++;
+    }
+
+    return (ty.d = (ptr, dv) => {
+        return Object.defineProperties(
+            Object.create(Object.prototype, creator),
+            {
+                $: { value: ptr },
+                _: { value: dv }
+            }
+        );
+    });
+}
+
 export function deserialize<T>(
     msg: Uint8Array | ArrayBuffer,
     schema: PestType<T>
 ): T {
-    function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
-        const len = dv.getUint32(ptr, true);
-        ptr += 4;
-        if (0 <= ty.i && ty.i < 10 && !ty.n) {
-            // align to ty.z bytes
-            ptr += -ptr & (ty.z - 1);
-            return new [
-                Int8Array,
-                Int16Array,
-                Int32Array,
-                BigInt64Array,
-                Uint8Array,
-                Uint16Array,
-                Uint32Array,
-                BigUint64Array,
-                Float32Array,
-                Float64Array
-            ][ty.i](dv.buffer, ptr, len);
-        }
-
-        const deserializer = get_deserializer(ty);
-        const arr = [
-            len,
-            (i: number) => {
-                if (
-                    ty.n &&
-                    dv.getUint8(ptr + (ty.z ? 0 : len * 4) + (i >>> 3)) &
-                        (1 << (i & 7))
-                )
-                    return null;
-
-                return deserializer(
-                    ptr +
-                        (ty.n ? (len + 7) >>> 3 : 0) +
-                        (ty.z
-                            ? i * ty.z
-                            : len * 4 + dv.getUint32(ptr + i * 4, true)),
-                    dv
-                );
-            }
-        ];
-        return new Proxy(arr, handler);
-    }
-
-    function get_deserializer(ty: PestTypeInternal): Deserializer {
-        if (ty.d !== nofunc) return ty.d;
-        if (ty.i === -1) return (ty.d = (ptr, dv) => PestArray(ptr, ty.e!, dv));
-        if (ty.i < 0) return (ty.d = get_deserializer(ty.e!));
-
-        // values start after the offset table
-        let pos = ty.y + ty.u;
-        let dynamics = 0;
-        let nulls = 0;
-
-        const creator: Record<string, PropertyDescriptor> = {};
-
-        for (const name in ty.f) {
-            const field = ty.f[name];
-            creator[name] = {
-                get: new Function(
-                    "d",
-                    `return function(){return ${
-                        field.n
-                            ? `(this._.getUint8(this.$+${
-                                  ty.y + (nulls >>> 3)
-                              })&${1 << (nulls & 7)})?null:`
-                            : ""
-                    }d(this.$+${pos}${
-                        !ty.z && dynamics !== 0
-                            ? `+this._.getUint32(this.$+${
-                                  (dynamics - 1) * 4
-                              },!0)`
-                            : ""
-                    },this._)}`
-                )(get_deserializer(field)),
-                enumerable: true
-            };
-            pos += field.z;
-            // @ts-expect-error complain to brendan eich
-            dynamics += !field.z;
-            if (field.n) nulls++;
-        }
-
-        return (ty.d = (ptr, dv) => {
-            return Object.defineProperties(
-                Object.create(Object.prototype, creator),
-                {
-                    $: { value: ptr },
-                    _: { value: dv }
-                }
-            );
-        });
-    }
-
     const internal = schema as unknown as PestTypeInternal;
     // @ts-expect-error cry
     const buffer = (msg.buffer ?? msg) as ArrayBuffer;
