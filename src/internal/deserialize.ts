@@ -83,45 +83,25 @@ export function deserialize<T>(
 
         for (const name in ty.f) {
             const field = ty.f[name];
-            const deserializer = get_deserializer(field);
-            // make sure the closures capture their own values
-            const posx = pos;
-            const nullsx = nulls;
-            if (!ty.z && dynamics !== 0) {
-                const table_offset = (dynamics - 1) * 4;
-                creator[name] = {
-                    get(this: Instance) {
-                        if (
-                            field.n &&
-                            this._.getUint8(this.$ + ty.y + (nullsx >>> 3)) &
-                                (1 << (nullsx & 7))
-                        )
-                            return null;
-
-                        return deserializer(
-                            this.$ +
-                                posx +
-                                this._.getUint32(this.$ + table_offset, true),
-                            this._
-                        );
-                    },
-                    enumerable: true
-                };
-            } else {
-                creator[name] = {
-                    get(this: Instance) {
-                        if (
-                            field.n &&
-                            this._.getUint8(this.$ + ty.y + (nullsx >>> 3)) &
-                                (1 << (nullsx & 7))
-                        )
-                            return null;
-
-                        return deserializer(this.$ + posx, this._);
-                    },
-                    enumerable: true
-                };
-            }
+            creator[name] = {
+                get: new Function(
+                    "d",
+                    `return function(){return ${
+                        field.n
+                            ? `(this._.getUint8(this.$+${
+                                  ty.y + (nulls >>> 3)
+                              })&${1 << (nulls & 7)})?null:`
+                            : ""
+                    }d(this.$+${pos}${
+                        !ty.z && dynamics !== 0
+                            ? `+this._.getUint32(this.$+${
+                                  (dynamics - 1) * 4
+                              },!0)`
+                            : ""
+                    },this._)}`
+                )(get_deserializer(field)),
+                enumerable: true
+            };
             pos += field.z;
             // @ts-expect-error complain to brendan eich
             dynamics += !field.z;
