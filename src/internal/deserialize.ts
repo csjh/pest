@@ -2,8 +2,8 @@ import { nofunc } from "./primitives.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
 interface Instance {
-    $p: number;
-    $d: DataView;
+    $: number;
+    _: DataView;
 }
 
 export function deserialize<T>(
@@ -79,12 +79,7 @@ export function deserialize<T>(
         let dynamics = 0;
         let nulls = 0;
 
-        function fn(this: Instance, ptr: number, dv: DataView) {
-            // @ts-expect-error technically doesn't have right signature
-            if (!this) return new fn(ptr, dv);
-            Object.defineProperty(this, "$p", { value: ptr });
-            Object.defineProperty(this, "$d", { value: dv });
-        }
+        const creator: Record<string, PropertyDescriptor> = {};
 
         for (const name in ty.f) {
             const field = ty.f[name];
@@ -94,41 +89,38 @@ export function deserialize<T>(
             const nullsx = nulls;
             if (!ty.z && dynamics !== 0) {
                 const table_offset = (dynamics - 1) * 4;
-                Object.defineProperty(fn.prototype, name, {
+                creator[name] = {
                     get(this: Instance) {
                         if (
                             field.n &&
-                            this.$d.getUint8(this.$p + ty.y + (nullsx >>> 3)) &
+                            this._.getUint8(this.$ + ty.y + (nullsx >>> 3)) &
                                 (1 << (nullsx & 7))
                         )
                             return null;
 
                         return deserializer(
-                            this.$p! +
+                            this.$ +
                                 posx +
-                                this.$d.getUint32(
-                                    this.$p! + table_offset,
-                                    true
-                                ),
-                            this.$d
+                                this._.getUint32(this.$ + table_offset, true),
+                            this._
                         );
                     },
                     enumerable: true
-                });
+                };
             } else {
-                Object.defineProperty(fn.prototype, name, {
+                creator[name] = {
                     get(this: Instance) {
                         if (
                             field.n &&
-                            this.$d.getUint8(this.$p + ty.y + (nullsx >>> 3)) &
+                            this._.getUint8(this.$ + ty.y + (nullsx >>> 3)) &
                                 (1 << (nullsx & 7))
                         )
                             return null;
 
-                        return deserializer(this.$p! + posx, this.$d);
+                        return deserializer(this.$ + posx, this._);
                     },
                     enumerable: true
-                });
+                };
             }
             pos += field.z;
             // @ts-expect-error complain to brendan eich
@@ -136,7 +128,15 @@ export function deserialize<T>(
             if (field.n) nulls++;
         }
 
-        return (ty.d = fn);
+        return (ty.d = (ptr, dv) => {
+            return Object.defineProperties(
+                Object.create(Object.prototype, creator),
+                {
+                    $: { value: ptr },
+                    _: { value: dv }
+                }
+            );
+        });
     }
 
     const internal = schema as unknown as PestTypeInternal;

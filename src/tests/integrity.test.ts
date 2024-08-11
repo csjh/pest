@@ -4,39 +4,6 @@ import { describe, it, expect } from "bun:test";
 import { getSingleModule } from "./utils.js";
 import { PestType } from "../internal/types.js";
 
-function leftEqual(left: unknown, right: unknown) {
-    if (typeof left !== typeof right) {
-        return false;
-    }
-    if (typeof left !== "object") {
-        return left === right;
-    }
-
-    if (Array.isArray(left)) {
-        if (!Array.isArray(right) || left.length !== right.length) return false;
-        for (let i = 0; i < left.length; i++) {
-            if (!leftEqual(left[i], right[i])) return false;
-        }
-        return true;
-    }
-
-    if (left === null || right === null) {
-        return left === right;
-    }
-
-    for (const key in left) {
-        // @ts-ignore
-        if (!leftEqual(left[key], right[key])) {
-            return false;
-        }
-    }
-
-    // @ts-ignore
-    if (Object.keys(right).length) return false;
-
-    return true;
-}
-
 describe("definitions", async () => {
     it("should stay intact with static structs", async () => {
         const { serialize, deserialize, materialize, Coordinate, Locations } =
@@ -44,32 +11,25 @@ describe("definitions", async () => {
                 new URL("./definitions/static.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const coord = { x: 1, y: 2 };
-        expect(mirror(coord, Coordinate)).toEqual(coord);
-        expect(
-            leftEqual(
-                coord,
-                deserialize(serialize(coord, Coordinate), Coordinate)
-            )
-        ).toBe(true);
+        expect(coord).toEqual(mirror(coord, Coordinate, deserialize));
+        expect(coord).toEqual(mirror(coord, Coordinate, materialize));
 
         const locations = {
             home: { x: 1, y: 2 },
             work: { x: 3, y: 4 }
         };
-        expect(mirror(locations, Locations)).toEqual(locations);
-        expect(
-            leftEqual(
-                locations,
-                deserialize(serialize(locations, Locations), Locations)
-            )
-        ).toBe(true);
+        expect(locations).toEqual(mirror(locations, Locations, deserialize));
+        expect(locations).toEqual(mirror(locations, Locations, materialize));
     });
 
     it("should stay intact with dynamic structs", async () => {
@@ -78,10 +38,13 @@ describe("definitions", async () => {
                 new URL("./definitions/dynamic.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const map = {
@@ -124,10 +87,8 @@ describe("definitions", async () => {
             }
         };
 
-        expect(mirror(map, Map)).toEqual(map);
-        expect(leftEqual(map, deserialize(serialize(map, Map), Map))).toBe(
-            true
-        );
+        expect(map).toEqual(mirror(map, Map, deserialize));
+        expect(map).toEqual(mirror(map, Map, materialize));
 
         const endpoint = {
             method: "GET",
@@ -135,13 +96,8 @@ describe("definitions", async () => {
             accessed_at: new Date()
         };
 
-        expect(mirror(endpoint, Endpoint)).toEqual(endpoint);
-        expect(
-            leftEqual(
-                endpoint,
-                deserialize(serialize(endpoint, Endpoint), Endpoint)
-            )
-        ).toBe(true);
+        expect(endpoint).toEqual(mirror(endpoint, Endpoint, deserialize));
+        expect(endpoint).toEqual(mirror(endpoint, Endpoint, materialize));
     });
 
     it("should stay intact with static structs", async () => {
@@ -155,38 +111,29 @@ describe("definitions", async () => {
             new URL("./definitions/static.pest", import.meta.url)
         );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const coord = { x: 1, y: null };
-        expect(mirror(coord, NullableCoordinate)).toEqual(coord);
-        expect(
-            leftEqual(
-                coord,
-                deserialize(
-                    serialize(coord, NullableCoordinate),
-                    NullableCoordinate
-                )
-            )
-        ).toBe(true);
+        expect(coord).toEqual(mirror(coord, NullableCoordinate, deserialize));
+        expect(coord).toEqual(mirror(coord, NullableCoordinate, materialize));
 
         const locations = {
             home: { x: null, y: 23 },
             work: null
         };
-        expect(mirror(locations, LocationsMaybeNoWork)).toEqual(locations);
-        expect(
-            leftEqual(
-                locations,
-                deserialize(
-                    serialize(locations, LocationsMaybeNoWork),
-                    LocationsMaybeNoWork
-                )
-            )
-        ).toBe(true);
+        expect(locations).toEqual(
+            mirror(locations, LocationsMaybeNoWork, deserialize)
+        );
+        expect(locations).toEqual(
+            mirror(locations, LocationsMaybeNoWork, materialize)
+        );
     });
 
     it("should stay intact with dynamic structs", async () => {
@@ -195,10 +142,13 @@ describe("definitions", async () => {
                 new URL("./definitions/dynamic.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const map = {
@@ -217,16 +167,8 @@ describe("definitions", async () => {
             current: null
         };
 
-        expect(mirror(map, MapSketchyLocations)).toEqual(map);
-        expect(
-            leftEqual(
-                map,
-                deserialize(
-                    serialize(map, MapSketchyLocations),
-                    MapSketchyLocations
-                )
-            )
-        ).toBe(true);
+        expect(map).toEqual(mirror(map, MapSketchyLocations, deserialize));
+        expect(map).toEqual(mirror(map, MapSketchyLocations, materialize));
 
         const map2 = {
             locations: [
@@ -262,15 +204,7 @@ describe("definitions", async () => {
             }
         };
 
-        expect(mirror(map2, MapSketchyLocations)).toEqual(map2);
-        expect(
-            leftEqual(
-                map2,
-                deserialize(
-                    serialize(map2, MapSketchyLocations),
-                    MapSketchyLocations
-                )
-            )
-        ).toBe(true);
+        expect(map2).toEqual(mirror(map2, MapSketchyLocations, deserialize));
+        expect(map2).toEqual(mirror(map2, MapSketchyLocations, materialize));
     });
 });

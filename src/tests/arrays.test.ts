@@ -5,79 +5,28 @@ import { getSingleModule } from "./utils.js";
 import { array } from "../index.js";
 import { PestType } from "../internal/types.js";
 
-function leftEqual(left: unknown, right: unknown) {
-    if (typeof left !== typeof right) {
-        return false;
-    }
-    if (typeof left !== "object") {
-        return left === right;
-    }
-
-    if (Array.isArray(left)) {
-        if (!Array.isArray(right) || left.length !== right.length) return false;
-        for (let i = 0; i < left.length; i++) {
-            if (!leftEqual(left[i], right[i])) return false;
-        }
-        return true;
-    }
-
-    if (ArrayBuffer.isView(left)) {
-        if (!ArrayBuffer.isView(right)) return false;
-        if (left.byteLength !== right.byteLength) return false;
-        if (left.constructor !== right.constructor) return false;
-        const l = new Uint8Array(left.buffer, left.byteOffset, left.byteLength),
-            r = new Uint8Array(
-                right.buffer,
-                right.byteOffset,
-                right.byteLength
-            );
-        return l.every((v, i) => v === r[i]);
-    }
-
-    if (left === null || right === null) {
-        return left === right;
-    }
-
-    for (const key in left) {
-        // @ts-ignore
-        if (!leftEqual(left[key], right[key])) {
-            return false;
-        }
-    }
-
-    // @ts-ignore
-    if (Object.keys(right).length) return false;
-
-    return true;
-}
-
 describe("unnested arrays", async () => {
-    it("should stay intact with static struct arrays", async () => {
+    it("should stay intact with static struct arrays a", async () => {
         const { serialize, deserialize, materialize, Coordinate, Locations } =
             await getSingleModule(
                 new URL("./definitions/static.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const coord = [
             { x: 1, y: 2 },
             { x: 1, y: 2 }
         ];
-        expect(mirror(coord, array(Coordinate))).toEqual(coord);
-        expect(
-            leftEqual(
-                coord,
-                deserialize(
-                    serialize(coord, array(Coordinate)),
-                    array(Coordinate)
-                )
-            )
-        ).toBe(true);
+        expect(coord).toEqual(mirror(coord, array(Coordinate), deserialize));
+        expect(coord).toEqual(mirror(coord, array(Coordinate), materialize));
 
         const locations = [
             {
@@ -89,16 +38,12 @@ describe("unnested arrays", async () => {
                 work: { x: 3, y: 4 }
             }
         ];
-        expect(mirror(locations, array(Locations))).toEqual(locations);
-        expect(
-            leftEqual(
-                locations,
-                deserialize(
-                    serialize(locations, array(Locations)),
-                    array(Locations)
-                )
-            )
-        ).toBe(true);
+        expect(locations).toEqual(
+            mirror(locations, array(Locations), deserialize)
+        );
+        expect(locations).toEqual(
+            mirror(locations, array(Locations), materialize)
+        );
     });
 
     it("should stay intact with dynamic struct arrays", async () => {
@@ -107,10 +52,13 @@ describe("unnested arrays", async () => {
                 new URL("./definitions/dynamic.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const map = [
@@ -194,10 +142,8 @@ describe("unnested arrays", async () => {
             }
         ];
 
-        expect(mirror(map, array(Map))).toEqual(map);
-        expect(
-            leftEqual(map, deserialize(serialize(map, array(Map)), array(Map)))
-        ).toBe(true);
+        expect(map).toEqual(mirror(map, array(Map), deserialize));
+        expect(map).toEqual(mirror(map, array(Map), materialize));
     });
 
     it("should work as an array", async () => {
@@ -213,8 +159,8 @@ describe("unnested arrays", async () => {
         const serialized = serialize(coord, array(Coordinate));
         const deserialized = deserialize(serialized, array(Coordinate));
 
-        expect(deserialized.map((c) => c.x)).toEqual(coord.map((c) => c.x));
-        expect(deserialized.map((c) => c.y)).toEqual(coord.map((c) => c.y));
+        expect(coord.map((c) => c.x)).toEqual(deserialized.map((c) => c.x));
+        expect(coord.map((c) => c.y)).toEqual(deserialized.map((c) => c.y));
         expect(deserialized.every((c) => typeof c === "object")).toBe(true);
     });
 
@@ -229,23 +175,18 @@ describe("unnested arrays", async () => {
             new URL("./definitions/static.pest", import.meta.url)
         );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const coord = [null, { x: 1, y: 2 }];
-        expect(mirror(coord, NullableCoordArray)).toEqual(coord);
-        expect(
-            leftEqual(
-                coord,
-                deserialize(
-                    serialize(coord, NullableCoordArray),
-                    NullableCoordArray
-                )
-            )
-        ).toBe(true);
+        expect(coord).toEqual(mirror(coord, NullableCoordArray, deserialize));
+        expect(coord).toEqual(mirror(coord, NullableCoordArray, materialize));
 
         const locations = [
             {
@@ -254,16 +195,12 @@ describe("unnested arrays", async () => {
             },
             null
         ];
-        expect(mirror(locations, NullableLocationArray)).toEqual(locations);
-        expect(
-            leftEqual(
-                locations,
-                deserialize(
-                    serialize(locations, NullableLocationArray),
-                    NullableLocationArray
-                )
-            )
-        ).toBe(true);
+        expect(locations).toEqual(
+            mirror(locations, NullableLocationArray, deserialize)
+        );
+        expect(locations).toEqual(
+            mirror(locations, NullableLocationArray, materialize)
+        );
     });
 
     it("should stay intact with dynamic struct arrays", async () => {
@@ -272,10 +209,13 @@ describe("unnested arrays", async () => {
                 new URL("./definitions/dynamic.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const map = [
@@ -321,13 +261,8 @@ describe("unnested arrays", async () => {
             null
         ];
 
-        expect(mirror(map, NullableMapArray)).toEqual(map);
-        expect(
-            leftEqual(
-                map,
-                deserialize(serialize(map, NullableMapArray), NullableMapArray)
-            )
-        ).toBe(true);
+        expect(map).toEqual(mirror(map, NullableMapArray, deserialize));
+        expect(map).toEqual(mirror(map, NullableMapArray, materialize));
     });
 });
 
@@ -338,10 +273,13 @@ describe("nested arrays", async () => {
                 new URL("./definitions/static.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const coord = [
@@ -354,16 +292,8 @@ describe("nested arrays", async () => {
                 { x: 1, y: 2 }
             ]
         ];
-        expect(mirror(coord, array(Coordinate, 2))).toEqual(coord);
-        expect(
-            leftEqual(
-                coord,
-                deserialize(
-                    serialize(coord, array(Coordinate, 2)),
-                    array(Coordinate, 2)
-                )
-            )
-        ).toBe(true);
+        expect(coord).toEqual(mirror(coord, array(Coordinate, 2), deserialize));
+        expect(coord).toEqual(mirror(coord, array(Coordinate, 2), materialize));
 
         const locations = [
             [
@@ -387,16 +317,12 @@ describe("nested arrays", async () => {
                 }
             ]
         ];
-        expect(mirror(locations, array(Locations, 2))).toEqual(locations);
-        expect(
-            leftEqual(
-                locations,
-                deserialize(
-                    serialize(locations, array(Locations, 2)),
-                    array(Locations, 2)
-                )
-            )
-        ).toBe(true);
+        expect(locations).toEqual(
+            mirror(locations, array(Locations, 2), deserialize)
+        );
+        expect(locations).toEqual(
+            mirror(locations, array(Locations, 2), materialize)
+        );
     });
 
     it("should stay intact with dynamic struct arrays", async () => {
@@ -405,10 +331,13 @@ describe("nested arrays", async () => {
                 new URL("./definitions/dynamic.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const map = [
@@ -643,13 +572,8 @@ describe("nested arrays", async () => {
             ]
         ];
 
-        expect(mirror(map, array(Map, 2))).toEqual(map);
-        expect(
-            leftEqual(
-                map,
-                deserialize(serialize(map, array(Map, 2)), array(Map, 2))
-            )
-        ).toBe(true);
+        expect(map).toEqual(mirror(map, array(Map, 2), deserialize));
+        expect(map).toEqual(mirror(map, array(Map, 2), materialize));
     });
 
     it("should work as an array", async () => {
@@ -693,10 +617,13 @@ describe("nested arrays", async () => {
             new URL("./definitions/static.pest", import.meta.url)
         );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const coord = [
@@ -706,16 +633,12 @@ describe("nested arrays", async () => {
                 { x: 1, y: 2 }
             ]
         ];
-        expect(mirror(coord, NullableCoordArrayArray)).toEqual(coord);
-        expect(
-            leftEqual(
-                coord,
-                deserialize(
-                    serialize(coord, NullableCoordArrayArray),
-                    NullableCoordArrayArray
-                )
-            )
-        ).toBe(true);
+        expect(coord).toEqual(
+            mirror(coord, NullableCoordArrayArray, deserialize)
+        );
+        expect(coord).toEqual(
+            mirror(coord, NullableCoordArrayArray, materialize)
+        );
 
         const locations = [
             [
@@ -739,16 +662,12 @@ describe("nested arrays", async () => {
                 }
             ]
         ];
-        expect(mirror(locations, NullableLocations)).toEqual(locations);
-        expect(
-            leftEqual(
-                locations,
-                deserialize(
-                    serialize(locations, NullableLocations),
-                    NullableLocations
-                )
-            )
-        ).toBe(true);
+        expect(locations).toEqual(
+            mirror(locations, NullableLocations, deserialize)
+        );
+        expect(locations).toEqual(
+            mirror(locations, NullableLocations, materialize)
+        );
     });
 
     it("should stay intact with nullish dynamic struct arrays", async () => {
@@ -757,10 +676,13 @@ describe("nested arrays", async () => {
                 new URL("./definitions/dynamic.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const map = [
@@ -904,16 +826,8 @@ describe("nested arrays", async () => {
             ]
         ];
 
-        expect(mirror(map, NullableMapArrayArray)).toEqual(map);
-        expect(
-            leftEqual(
-                map,
-                deserialize(
-                    serialize(map, NullableMapArrayArray),
-                    NullableMapArrayArray
-                )
-            )
-        ).toBe(true);
+        expect(map).toEqual(mirror(map, NullableMapArrayArray, deserialize));
+        expect(map).toEqual(mirror(map, NullableMapArrayArray, materialize));
     });
 });
 
@@ -924,23 +838,21 @@ describe("unnested typed arrays", async () => {
                 new URL("./definitions/typedarray.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const races = {
             horses: ["Horsey"],
             times: new Float64Array([1.0])
         };
-        expect(mirror(races, HorseRace)).toEqual(races);
-        expect(
-            leftEqual(
-                races,
-                deserialize(serialize(races, HorseRace), HorseRace)
-            )
-        ).toBe(true);
+        expect(races).toEqual(mirror(races, HorseRace, deserialize));
+        expect(races).toEqual(mirror(races, HorseRace, materialize));
 
         const races2 = [
             {
@@ -952,16 +864,8 @@ describe("unnested typed arrays", async () => {
                 times: new Float64Array([1.0, 2.0, 3.0, 4.0])
             }
         ];
-        expect(mirror(races2, array(HorseRace))).toEqual(races2);
-        expect(
-            leftEqual(
-                races2,
-                deserialize(
-                    serialize(races2, array(HorseRace)),
-                    array(HorseRace)
-                )
-            )
-        ).toBe(true);
+        expect(races2).toEqual(mirror(races2, array(HorseRace), deserialize));
+        expect(races2).toEqual(mirror(races2, array(HorseRace), materialize));
     });
 
     it("should work as a typedarray", async () => {
@@ -995,26 +899,25 @@ describe("unnested typed arrays", async () => {
                 new URL("./definitions/typedarray.pest", import.meta.url)
             );
 
-        function mirror<T>(data: T, schema: PestType<T>) {
-            // @ts-expect-error meh
+        function mirror<T>(
+            data: T,
+            schema: PestType<unknown>,
+            f: typeof materialize
+        ): T {
             const serialized = serialize(data, schema);
-            return materialize(serialized, schema);
+            return f(serialized, schema) as T;
         }
 
         const races = {
             horses: ["Horsey"],
             times: [1.0, null]
         };
-        expect(mirror(races, HorseRaceSomeHorsesDied)).toEqual(races);
-        expect(
-            leftEqual(
-                races,
-                deserialize(
-                    serialize(races, HorseRaceSomeHorsesDied),
-                    HorseRaceSomeHorsesDied
-                )
-            )
-        ).toBe(true);
+        expect(races).toEqual(
+            mirror(races, HorseRaceSomeHorsesDied, deserialize)
+        );
+        expect(races).toEqual(
+            mirror(races, HorseRaceSomeHorsesDied, materialize)
+        );
 
         const races2 = [
             {
@@ -1026,10 +929,11 @@ describe("unnested typed arrays", async () => {
                 times: [1.0, 2.0, null, 3.0, 4.0]
             }
         ];
-        expect(mirror(races2, array(HorseRaceSomeHorsesDied))).toEqual(races2);
-        const se = serialize(races2, array(HorseRaceSomeHorsesDied));
-        expect(
-            leftEqual(races2, deserialize(se, array(HorseRaceSomeHorsesDied)))
-        ).toBe(true);
+        expect(races2).toEqual(
+            mirror(races2, array(HorseRaceSomeHorsesDied), deserialize)
+        );
+        expect(races2).toEqual(
+            mirror(races2, array(HorseRaceSomeHorsesDied), materialize)
+        );
     });
 });
