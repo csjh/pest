@@ -5,7 +5,7 @@ interface Instance {
     _: DataView;
     $: number;
 }
-type ProxyArray = [number, 0 | 1, number, Deserializer, DataView, number];
+type ProxyArray = [number, PestTypeInternal, DataView, number];
 
 const handler = {
     get(target, prop, receiver) {
@@ -30,19 +30,19 @@ const handler = {
 // this is in a separate function so a new copy isn't allocated for each array
 function index(ctx: ProxyArray, i: number) {
     if (
-        ctx[1] &&
-        ctx[4].getUint8(ctx[5] + (ctx[2] ? 0 : ctx[0] * 4) + (i >>> 3)) &
+        ctx[1].n &&
+        ctx[2].getUint8(ctx[3] + (ctx[1].z ? 0 : ctx[0] * 4) + (i >>> 3)) &
             (1 << (i & 7))
     )
         return null;
 
-    return ctx[3](
-        ctx[5] +
-            (ctx[1] ? (ctx[0] + 7) >>> 3 : 0) +
-            (ctx[2]
-                ? i * ctx[2]
-                : ctx[0] * 4 + ctx[4].getUint32(ctx[5] + i * 4, true)),
-        ctx[4]
+    return ctx[1].d(
+        ctx[3] +
+            (ctx[1].n ? (ctx[0] + 7) >>> 3 : 0) +
+            (ctx[1].z
+                ? i * ctx[1].z
+                : ctx[0] * 4 + ctx[2].getUint32(ctx[3] + i * 4, true)),
+        ctx[2]
     );
 }
 
@@ -66,14 +66,8 @@ function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
         ][ty.i](dv.buffer, ptr, len);
     }
 
-    const arr = [
-        len,
-        ty.n,
-        ty.z,
-        get_deserializer(ty),
-        dv,
-        ptr
-    ] satisfies ProxyArray;
+    get_deserializer(ty);
+    const arr = [len, ty, dv, ptr] satisfies ProxyArray;
     return new Proxy(arr, handler);
 }
 
