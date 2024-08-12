@@ -1,6 +1,10 @@
 import { nofunc } from "./primitives.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
+interface Instance {
+    _: DataView;
+    $: number;
+}
 type ProxyArray = [number, 0 | 1, number, Deserializer, DataView, number];
 
 const handler = {
@@ -114,11 +118,15 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
         if (field.n) nulls++;
     }
 
-    return (ty.d = (ptr, dv) => {
-        return Object.assign(Object.defineProperties({}, creator), {
-            $: ptr,
-            _: dv
-        });
+    // a constructor function is necessary to trigger slack tracking
+    // https://v8.dev/blog/slack-tracking
+    return (ty.d = function fn(this: Instance, ptr: number, dv: DataView) {
+        // @ts-expect-error 😹
+        if (!new.target) return new fn(ptr, dv);
+        Object.defineProperties(this, creator);
+        this.$ = ptr;
+        this._ = dv;
+        Object.setPrototypeOf(this, Object.prototype);
     });
 }
 
