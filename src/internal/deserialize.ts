@@ -1,14 +1,14 @@
 import { nofunc } from "./primitives.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
-type ProxyArray = [number, (i: number) => unknown];
+type ProxyArray = [number, 0 | 1, number, Deserializer, DataView, number];
 
 const handler = {
     get(target, prop, receiver) {
         if (prop === "length") {
             return target[0];
         } else if (typeof prop === "string" && !isNaN(+prop)) {
-            return target[1](+prop);
+            return index(target, +prop);
         }
         // @ts-expect-error this is supposed to be an array so if it doesn't fit the pattern it's an error
         return target[prop]?.bind(receiver);
@@ -22,6 +22,25 @@ const handler = {
         return Array.prototype;
     }
 } satisfies ProxyHandler<ProxyArray>;
+
+// this is in a separate function so a new copy isn't allocated for each array
+function index(ctx: ProxyArray, i: number) {
+    if (
+        ctx[1] &&
+        ctx[4].getUint8(ctx[5] + (ctx[2] ? 0 : ctx[0] * 4) + (i >>> 3)) &
+            (1 << (i & 7))
+    )
+        return null;
+
+    return ctx[3](
+        ctx[5] +
+            (ctx[1] ? (ctx[0] + 7) >>> 3 : 0) +
+            (ctx[2]
+                ? i * ctx[2]
+                : ctx[0] * 4 + ctx[4].getUint32(ctx[5] + i * 4, true)),
+        ctx[4]
+    );
+}
 
 function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
     const len = dv.getUint32(ptr, true);
@@ -43,30 +62,21 @@ function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
         ][ty.i](dv.buffer, ptr, len);
     }
 
-    const deserializer = get_deserializer(ty);
     const arr = [
         len,
-        (i: number) => {
-            if (
-                ty.n &&
-                dv.getUint8(ptr + (ty.z ? 0 : len * 4) + (i >>> 3)) &
-                    (1 << (i & 7))
-            )
-                return null;
-
-            return deserializer(
-                ptr +
-                    (ty.n ? (len + 7) >>> 3 : 0) +
-                    (ty.z
-                        ? i * ty.z
-                        : len * 4 + dv.getUint32(ptr + i * 4, true)),
-                dv
-            );
-        }
-    ];
+        ty.n,
+        ty.z,
+        get_deserializer(ty),
+        dv,
+        ptr
+    ] satisfies ProxyArray;
     return new Proxy(arr, handler);
 }
 
+const base = {
+    $: { value: 0, writable: true },
+    _: { value: null, writable: true }
+};
 function get_deserializer(ty: PestTypeInternal): Deserializer {
     if (ty.d !== nofunc) return ty.d;
     if (ty.i === -1) return (ty.d = (ptr, dv) => PestArray(ptr, ty.e!, dv));
@@ -77,7 +87,7 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
     let dynamics = 0;
     let nulls = 0;
 
-    const creator: Record<string, PropertyDescriptor> = {};
+    const creator: Record<string, PropertyDescriptor> = { ...base };
 
     for (const name in ty.f) {
         const field = ty.f[name];
@@ -105,13 +115,10 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
     }
 
     return (ty.d = (ptr, dv) => {
-        return Object.defineProperties(
-            Object.create(Object.prototype, creator),
-            {
-                $: { value: ptr },
-                _: { value: dv }
-            }
-        );
+        return Object.assign(Object.defineProperties({}, creator), {
+            $: ptr,
+            _: dv
+        });
     });
 }
 
