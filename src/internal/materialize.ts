@@ -58,6 +58,17 @@ function get_materialized(ty: PestTypeInternal): Materializer {
     for (const name in ty.f) {
         const field = ty.f[name];
         get_materialized(field); // ensure materializer is cached
+        /*
+        one of four forms:
+        if field is nullable and sized:
+            name: dv.getUint8(ptr + nulls >>> 3) & (1 << (nulls & 7)) ? null : field.m(p + pos, dv)
+        if field is nullable and unsized:
+            name: dv.getUint8(ptr + nulls >>> 3) & (1 << (nulls & 7)) ? null : field.m(p + pos + dv.getUint32(p + dynamics * 4, true), dv)
+        if field is not nullable and sized:
+            name: field.m(p + pos, dv)
+        if field is not nullable and unsized:
+            name: field.m(p + pos + dv.getUint32(p + dynamics * 4, true), dv)
+        */
         // prettier-ignore
         fn += `${name}:${
             field.n ? `d.getUint8(p+${ty.y + (nulls >>> 3)})&${1 << (nulls & 7)}?null:` : ""
