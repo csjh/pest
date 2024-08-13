@@ -89,6 +89,7 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
 
     for (const name in ty.f) {
         const field = ty.f[name];
+        // same as in materialize.ts, but lazily
         creator[name] = {
             get: new Function(
                 "d",
@@ -99,17 +100,18 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
                           })?null:`
                         : ""
                 }d(this.$+${pos}${
-                    !ty.z && dynamics !== 0
+                    !ty.z && dynamics
                         ? `+this._.getUint32(this.$+${(dynamics - 1) * 4},!0)`
                         : ""
                 },this._)}`
             )(get_deserializer(field)),
             enumerable: true
         };
+
         pos += field.z;
         // @ts-expect-error complain to brendan eich
         dynamics += !field.z;
-        if (field.n) nulls++;
+        nulls += field.n;
     }
 
     // a constructor function is necessary to trigger slack tracking

@@ -75,32 +75,45 @@ function get_serializer(ty: PestTypeInternal): Serializer {
 
     let dynamics = 0;
     let nulls = 0;
-    let static_size = 0;
+    let pos = 0;
     for (const name in ty.f) {
         const type = ty.f[name];
         get_serializer(type); // ensure serializer is cached
 
-        static_size += type.z;
-        if (!type.z) {
-            if (dynamics !== 0) {
-                fn += `w.d.setUint32(s+${(dynamics - 1) * 4},p-f,1);`;
-            } else {
-                fn += `f=p;`;
-            }
-            dynamics++;
-        }
-        if (type.n) {
-            fn += `a.${name}==null?(p+=${type.z},w.u[s+${
-                ty.y + (nulls >>> 3)
-            }]|=${1 << (nulls & 7)}):`;
-            nulls++;
-        }
+        /*
+        data = a.name
+        if field is unsized:
+            if this is the first dynamic field:
+                first_dynamic = ptr;
+            else:
+                dv.setUint32(start_ptr + <dynamic table offset>, ptr - first_dynamic, true);
+        if field is nullable and data == null:
+            ptr += type.z;
+            uint8[start_ptr + nulls >>> 3] |= 1 << (nulls & 7);
+        else:
+            type.s(writers, ptr, data)
+        */
+
+        // prettier-ignore
+        fn += `${
+            type.z ? "" : dynamics
+                ? `w.d.setUint32(s+${(dynamics - 1) * 4},p-f,!0);`
+                : `f=p;`
+        }${
+            type.n
+                ? `a.${name}==null?(p+=${type.z},w.u[s+${ty.y + (nulls >>> 3)}]|=${1 << (nulls & 7)}):` : ""
+        }p=_${name}(w,p,a.${name});`;
+
         // TODO: experiment more with inlining
         prelude += `,_${name}=t.${name}.s`;
-        fn += `p=_${name}(w,p,a.${name});`;
+
+        pos += type.z;
+        // @ts-expect-error cry
+        dynamics += !type.z;
+        nulls += type.n;
     }
 
-    fn = `${prelude};return(w,p,a)=>{r(p,${static_size},w);${fn}return p}`;
+    fn = `${prelude};return(w,p,a)=>{r(p,${pos},w);${fn}return p}`;
 
     return (ty.s = new Function("t", "r", fn)(ty.f, reserve));
 }

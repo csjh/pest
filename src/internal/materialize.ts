@@ -60,25 +60,25 @@ function get_materialized(ty: PestTypeInternal): Materializer {
         get_materialized(field); // ensure materializer is cached
         /*
         one of four forms:
-        if field is nullable and sized:
-            name: dv.getUint8(ptr + nulls >>> 3) & (1 << (nulls & 7)) ? null : field.m(p + pos, dv)
-        if field is nullable and unsized:
-            name: dv.getUint8(ptr + nulls >>> 3) & (1 << (nulls & 7)) ? null : field.m(p + pos + dv.getUint32(p + dynamics * 4, true), dv)
-        if field is not nullable and sized:
-            name: field.m(p + pos, dv)
-        if field is not nullable and unsized:
-            name: field.m(p + pos + dv.getUint32(p + dynamics * 4, true), dv)
+        if field is nullable and (dv.getUint8(ptr + nulls >>> 3) & (1 << (nulls & 7))) != 0:
+            output[name] = null
+        else if field is sized:
+            output[name] = field.m(p + pos, dv)
+        else:
+            output[name] = field.m(p + pos + dv.getUint32(p + dynamics * 4, true), dv)
         */
         // prettier-ignore
         fn += `${name}:${
             field.n ? `d.getUint8(p+${ty.y + (nulls >>> 3)})&${1 << (nulls & 7)}?null:` : ""
         }_${name}(p+${pos}${
-            dynamics !== 0 ? `+d.getUint32(p+${(dynamics - 1) * 4},!0)` : ""
+            dynamics ? `+d.getUint32(p+${(dynamics - 1) * 4},!0)` : ""
         },d),`;
         prelude += `,_${name}=f.${name}.m`;
+
         pos += field.z;
-        if (!field.z) dynamics++;
-        if (field.n) nulls++;
+        // @ts-expect-error cry
+        dynamics += !field.z;
+        nulls += field.n;
     }
     fn += `}`;
     fn = `${prelude};return(p,d)=>(${fn})`;
