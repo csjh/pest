@@ -27,6 +27,15 @@ const handler = {
     }
 } satisfies ProxyHandler<ProxyArray>;
 
+for (const p of Object.getOwnPropertyNames(Reflect)) {
+    if (!(p in handler)) {
+        // @ts-expect-error
+        handler[p] = () => {
+            throw new Error(`Method ${p} not implemented for Pest arrays`);
+        };
+    }
+}
+
 // this is in a separate function so a new copy isn't allocated for each array
 function index(ctx: ProxyArray, i: number) {
     if (
