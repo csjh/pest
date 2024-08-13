@@ -58,19 +58,13 @@ function get_materialized(ty: PestTypeInternal): Materializer {
     for (const name in ty.f) {
         const field = ty.f[name];
         get_materialized(field); // ensure materializer is cached
-        fn += `${name}:`;
-        if (field.n) {
-            fn += `d.getUint8(p+${ty.y + (nulls >>> 3)})&${
-                1 << (nulls & 7)
-            }?null:`;
-        }
+        // prettier-ignore
+        fn += `${name}:${
+            field.n ? `d.getUint8(p+${ty.y + (nulls >>> 3)})&${1 << (nulls & 7)}?null:` : ""
+        }_${name}(p+${pos}${
+            dynamics !== 0 ? `+d.getUint32(p+${(dynamics - 1) * 4},!0)` : ""
+        },d),`;
         prelude += `,_${name}=f.${name}.m`;
-        if (dynamics !== 0) {
-            const table_offset = (dynamics - 1) * 4;
-            fn += `_${name}(p+${pos}+d.getUint32(p+${table_offset},1),d),`;
-        } else {
-            fn += `_${name}(p+${pos},d),`;
-        }
         pos += field.z;
         if (!field.z) dynamics++;
         if (field.n) nulls++;
@@ -78,7 +72,7 @@ function get_materialized(ty: PestTypeInternal): Materializer {
     fn += `}`;
     fn = `${prelude};return(p,d)=>(${fn})`;
 
-    return (ty.m = new Function("f", "g", fn)(ty.f, get_materialized));
+    return (ty.m = new Function("f", fn)(ty.f));
 }
 
 export function materialize<T>(
