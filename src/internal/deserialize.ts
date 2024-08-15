@@ -56,7 +56,7 @@ function index(ctx: ProxyArray, i: number) {
     );
 }
 
-function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
+function deserialize_array(ptr: number, dv: DataView, ty: PestTypeInternal) {
     const len = dv.getUint32(ptr, true);
     ptr += 4;
     if (0 <= ty.i && ty.i < 10 && !ty.n) {
@@ -76,7 +76,7 @@ const base = {
 };
 function get_deserializer(ty: PestTypeInternal): Deserializer {
     if (ty.d !== nofunc) return ty.d;
-    if (ty.e) return (ty.d = (ptr, dv) => PestArray(ptr, dv, ty.e!));
+    if (ty.e) return (ty.d = (ptr, dv) => deserialize_array(ptr, dv, ty.e!));
 
     // values start after the offset table
     let pos = ty.y + ty.u;

@@ -1,5 +1,5 @@
 import { nofunc } from "./index.js";
-import { PestArray } from "./materialize.js";
+import { materialize_array } from "./materialize.js";
 import { reserve, serialize_array } from "./serialize.js";
 import { BufferWriters, Deserializer, PestType, PestTypeInternal, Serializer } from "./types.js";
 
@@ -100,7 +100,7 @@ export function array<E, D extends number = 1>(e: PestType<E>, depth: D = 1): Pe
     if (!depth) return e as unknown as ReturnType<typeof array<E, D>>;
     const el = array(e, depth - 1) as unknown as PestTypeInternal;
     return {
-        i: (e as unknown as PestTypeInternal).i ^ depth,
+        i: ((e as unknown as PestTypeInternal).i + depth) | 0,
         y: depth,
         u: 0,
         f: {},
@@ -110,7 +110,7 @@ export function array<E, D extends number = 1>(e: PestType<E>, depth: D = 1): Pe
         s: (writers, ptr, data) => serialize_array(el, writers, ptr, data),
         // the same as the above isn't done because i don't want ./deserialize.ts to be shipped unless explicitly imported
         d: nofunc,
-        m: (ptr, dv) => PestArray(ptr, dv, el)
+        m: (ptr, dv) => materialize_array(ptr, dv, el)
     } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;
 }
 
