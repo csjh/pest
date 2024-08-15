@@ -84,7 +84,7 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
     let dynamics = 0;
     let nulls = 0;
 
-    const creator: Record<string, PropertyDescriptor> = { ...base };
+    const creator: PropertyDescriptorMap = { ...base };
 
     for (const name in ty.f) {
         const field = ty.f[name];
