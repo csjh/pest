@@ -57,7 +57,7 @@ const _Date =          /* @__PURE__ */ primitive(11, 8, (w, ptr, data) => (w.d.s
 export const string =  /* @__PURE__ */ primitive(12, 0, encode_string, (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))))          as PestType<string>;
 const _RegExp =        /* @__PURE__ */ primitive(13, 0, (w, ptr, data): number => encode_string(w, ptr,`${data.flags}\0${data.source}`), (ptr, dv) => {
     const [flags, source] = (string as any).m(ptr, dv).split('\0', 2);
-    return globalThis.RegExp(source, flags);
+    return RegExp(source, flags);
 }) as PestType<RegExp>;
 
 export { _Date as Date, _RegExp as RegExp };
