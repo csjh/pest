@@ -41,19 +41,19 @@ function encode_string(w: BufferWriters, ptr: number, data: string): number {
     return ptr + length;
 }
 
-export const i8 =      /* @__PURE__ */ primitive( 0, 1, (w, ptr, data) => (w.d.setInt8     (ptr, data),        ptr + 1), (ptr, dv) => dv.getInt8     (ptr)      )         as PestType<number>;
-export const i16 =     /* @__PURE__ */ primitive( 1, 2, (w, ptr, data) => (w.d.setInt16    (ptr, data, true),  ptr + 2), (ptr, dv) => dv.getInt16    (ptr, true))         as PestType<number>;
-export const i32 =     /* @__PURE__ */ primitive( 2, 4, (w, ptr, data) => (w.d.setInt32    (ptr, data, true),  ptr + 4), (ptr, dv) => dv.getInt32    (ptr, true))         as PestType<number>;
-export const i64 =     /* @__PURE__ */ primitive( 3, 8, (w, ptr, data) => (w.d.setBigInt64 (ptr, data, true),  ptr + 8), (ptr, dv) => dv.getBigInt64 (ptr, true))         as PestType<bigint>;
-export const u8 =      /* @__PURE__ */ primitive( 4, 1, (w, ptr, data) => (w.d.setUint8    (ptr, data),        ptr + 1), (ptr, dv) => dv.getUint8    (ptr)      )         as PestType<number>;
-export const u16 =     /* @__PURE__ */ primitive( 5, 2, (w, ptr, data) => (w.d.setUint16   (ptr, data, true),  ptr + 2), (ptr, dv) => dv.getUint16   (ptr, true))         as PestType<number>;
-export const u32 =     /* @__PURE__ */ primitive( 6, 4, (w, ptr, data) => (w.d.setUint32   (ptr, data, true),  ptr + 4), (ptr, dv) => dv.getUint32   (ptr, true))         as PestType<number>;
-export const u64 =     /* @__PURE__ */ primitive( 7, 8, (w, ptr, data) => (w.d.setBigUint64(ptr, data, true),  ptr + 8), (ptr, dv) => dv.getBigUint64(ptr, true))         as PestType<bigint>;
-export const f32 =     /* @__PURE__ */ primitive( 8, 4, (w, ptr, data) => (w.d.setFloat32  (ptr, data, true),  ptr + 4), (ptr, dv) => dv.getFloat32  (ptr, true))         as PestType<number>;
-export const f64 =     /* @__PURE__ */ primitive( 9, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, data, true),  ptr + 8), (ptr, dv) => dv.getFloat64  (ptr, true))         as PestType<number>;
-export const boolean = /* @__PURE__ */ primitive(10, 1, (w, ptr, data) => (w.d.setUint8    (ptr, data? 1 : 0), ptr + 1), (ptr, dv) => dv.getUint8    (ptr) !== 0)         as PestType<boolean>;
-export const date =    /* @__PURE__ */ primitive(11, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, +data, true), ptr + 8), (ptr, dv) => new Date(dv.getFloat64(ptr, true))) as PestType<Date>;
-export const string =  /* @__PURE__ */ primitive(12, 0, encode_string, (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))))          as PestType<string>;
+export const i8 =      /* @__PURE__ */ primitive( 0, 1, (w, ptr, data) => (w.d.setInt8     (ptr, data),        ptr + 1), (ptr, dv) =>          dv.getInt8     (ptr)       ) as PestType<number>;
+export const i16 =     /* @__PURE__ */ primitive( 1, 2, (w, ptr, data) => (w.d.setInt16    (ptr, data, true),  ptr + 2), (ptr, dv) =>          dv.getInt16    (ptr, true )) as PestType<number>;
+export const i32 =     /* @__PURE__ */ primitive( 2, 4, (w, ptr, data) => (w.d.setInt32    (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getInt32    (ptr, true )) as PestType<number>;
+export const i64 =     /* @__PURE__ */ primitive( 3, 8, (w, ptr, data) => (w.d.setBigInt64 (ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getBigInt64 (ptr, true )) as PestType<bigint>;
+export const u8 =      /* @__PURE__ */ primitive( 4, 1, (w, ptr, data) => (w.d.setUint8    (ptr, data),        ptr + 1), (ptr, dv) =>          dv.getUint8    (ptr)       ) as PestType<number>;
+export const u16 =     /* @__PURE__ */ primitive( 5, 2, (w, ptr, data) => (w.d.setUint16   (ptr, data, true),  ptr + 2), (ptr, dv) =>          dv.getUint16   (ptr, true )) as PestType<number>;
+export const u32 =     /* @__PURE__ */ primitive( 6, 4, (w, ptr, data) => (w.d.setUint32   (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getUint32   (ptr, true )) as PestType<number>;
+export const u64 =     /* @__PURE__ */ primitive( 7, 8, (w, ptr, data) => (w.d.setBigUint64(ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getBigUint64(ptr, true )) as PestType<bigint>;
+export const f32 =     /* @__PURE__ */ primitive( 8, 4, (w, ptr, data) => (w.d.setFloat32  (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getFloat32  (ptr, true )) as PestType<number>;
+export const f64 =     /* @__PURE__ */ primitive( 9, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getFloat64  (ptr, true )) as PestType<number>;
+export const boolean = /* @__PURE__ */ primitive(10, 1, (w, ptr, data) => (w.d.setUint8    (ptr, data? 1 : 0), ptr + 1), (ptr, dv) =>          dv.getUint8    (ptr) !== 0 ) as PestType<boolean>;
+export const date =    /* @__PURE__ */ primitive(11, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, +data, true), ptr + 8), (ptr, dv) => new Date(dv.getFloat64  (ptr, true))) as PestType<Date>;
+export const string =  /* @__PURE__ */ primitive(12, 0, encode_string, (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))))            as PestType<string>;
 export const regexp =  /* @__PURE__ */ primitive(13, 0, (w, ptr, data): number => encode_string(w, ptr,`${data.flags}\0${data.source}`), (ptr, dv) => {
     const [flags, source] = (string as any).m(ptr, dv).split('\0', 2);
     return RegExp(source, flags);
