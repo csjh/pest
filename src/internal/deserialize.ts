@@ -1,3 +1,4 @@
+import { TypedArrays } from "./index.js";
 import { nofunc } from "./primitives.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
@@ -61,18 +62,7 @@ function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
     if (0 <= ty.i && ty.i < 10 && !ty.n) {
         // align to ty.z bytes
         ptr += -ptr & (ty.z - 1);
-        return new [
-            Int8Array,
-            Int16Array,
-            Int32Array,
-            BigInt64Array,
-            Uint8Array,
-            Uint16Array,
-            Uint32Array,
-            BigUint64Array,
-            Float32Array,
-            Float64Array
-        ][ty.i](dv.buffer, ptr, len);
+        return new TypedArrays[ty.i](dv.buffer, ptr, len);
     }
 
     get_deserializer(ty);

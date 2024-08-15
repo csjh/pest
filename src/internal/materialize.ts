@@ -1,18 +1,7 @@
+import { TypedArrays } from "./index.js";
 import { nofunc } from "./primitives.js";
 import type { Materializer, PestType, PestTypeInternal } from "./types.js";
 
-const TypedArrays = [
-    Int8Array,
-    Int16Array,
-    Int32Array,
-    BigInt64Array,
-    Uint8Array,
-    Uint16Array,
-    Uint32Array,
-    BigUint64Array,
-    Float32Array,
-    Float64Array
-];
 export function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
     const len = dv.getUint32(ptr, true);
     ptr += 4;
