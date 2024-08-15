@@ -11,8 +11,10 @@ export const TypedArrays = [
     Float64Array,
 ];
 
+export const nofunc = function (): any {};
+
 export { serialize } from "./serialize.js";
 export { deserialize } from "./deserialize.js";
 export { materialize } from "./materialize.js";
 export * from "./primitives.js";
-export type { PestType, Unwrap } from "./types.js";
+export type { PestType } from "./types.js";

@@ -38,16 +38,6 @@ type Prettify<T> = {
     [K in keyof T]: T[K];
 } & {};
 
-export type Unwrap<T> = T extends PestType<infer U>
-    ? Unwrap<U>
-    : T extends Date | ArrayBufferView
-    ? T
-    : T extends (infer U)[]
-    ? Unwrap<U>[]
-    : T extends Record<any, any>
-    ? { [K in keyof T]: Unwrap<T[K]> }
-    : T;
-
 export type AcceptBroad<T> = T extends Date
     ? T
     : T extends null

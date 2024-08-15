@@ -1,5 +1,5 @@
 import { TypedArrays } from "./index.js";
-import { nofunc } from "./primitives.js";
+import { nofunc } from "./index.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
 interface Instance {
@@ -56,7 +56,7 @@ function index(ctx: ProxyArray, i: number) {
     );
 }
 
-function PestArray(ptr: number, ty: PestTypeInternal, dv: DataView) {
+function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
     const len = dv.getUint32(ptr, true);
     ptr += 4;
     if (0 <= ty.i && ty.i < 10 && !ty.n) {
@@ -76,8 +76,7 @@ const base = {
 };
 function get_deserializer(ty: PestTypeInternal): Deserializer {
     if (ty.d !== nofunc) return ty.d;
-    if (ty.i === -1) return (ty.d = (ptr, dv) => PestArray(ptr, ty.e!, dv));
-    if (ty.i < 0) return (ty.d = get_deserializer(ty.e!));
+    if (ty.e) return (ty.d = (ptr, dv) => PestArray(ptr, dv, ty.e!));
 
     // values start after the offset table
     let pos = ty.y + ty.u;
@@ -135,25 +134,13 @@ export function deserialize<T>(
     const dv = new DataView(buffer);
 
     const type_id = dv.getInt32(0, true);
-    const depth = dv.getUint32(4, true);
-    // TODO: make this work with external nested array/nullable stuff
-    if (type_id < 0) {
-        if (internal.i !== -1) {
-            throw new Error("Expected array type");
-        }
-        if (depth !== internal.y) {
-            throw new Error("Depth mismatch");
-        }
-        let e = internal;
-        while (e.i === -1) e = e.e!;
-        if ((type_id & 0x7fffffff) !== Math.abs(e.i)) {
-            throw new Error("Type mismatch");
-        }
-    } else if (type_id !== Math.abs(internal.i)) {
-        throw new Error("Type mismatch");
+    if (type_id !== internal.i) {
+        throw new Error(
+            `Type mismatch: expected ${internal.i}, got ${type_id}`
+        );
     }
-    // 8 = skip over type id and depth
-    return get_deserializer(internal)(8, dv) as T;
+    // 4 = skip over type hash
+    return get_deserializer(internal)(4, dv) as T;
 }
 
 /*

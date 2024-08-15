@@ -13,9 +13,9 @@ import {
     f32,
     f64,
     boolean,
-    Date,
+    date,
     string,
-    RegExp,
+    regexp,
     serialize,
     deserialize,
     materialize,
@@ -108,8 +108,7 @@ describe("primitives", () => {
     });
 
     it("should serialize and deserialize Date", () => {
-        const date = new globalThis.Date();
-        test_primitive(date, Date);
+        test_primitive(new Date(), date);
     });
 
     it("should serialize and deserialize string", () => {
@@ -118,11 +117,11 @@ describe("primitives", () => {
     });
 
     it("should serialize and deserialize RegExp", () => {
-        test_primitive(/./, RegExp);
-        test_primitive(/./g, RegExp);
-        test_primitive(/./i, RegExp);
-        test_primitive(/./m, RegExp);
-        test_primitive(/./gim, RegExp);
-        test_primitive(/./gim, RegExp);
+        test_primitive(/./, regexp);
+        test_primitive(/./g, regexp);
+        test_primitive(/./i, regexp);
+        test_primitive(/./m, regexp);
+        test_primitive(/./gim, regexp);
+        test_primitive(/./gim, regexp);
     });
 });

@@ -1,26 +1,25 @@
 /// <reference types="bun-types" />
 
 import { describe, it, expect } from "bun:test";
-import { getSingleModule } from "./utils.js";
 import { array } from "../index.js";
-import { PestType } from "../internal/types.js";
+import { serialize, deserialize, materialize } from "../internal/index.js";
+import {
+    Locations,
+    NullableCoordArray,
+    NullableLocationArray,
+    NullableCoordArrayArray,
+    NullableLocations,
+    HorseRace,
+    HorseRaceSomeHorsesDied,
+    Coordinate,
+    mirror,
+    Map,
+    NullableMapArray,
+    NullableMapArrayArray
+} from "./shared.js";
 
 describe("unnested arrays", async () => {
     it("should stay intact with static struct arrays a", async () => {
-        const { serialize, deserialize, materialize, Coordinate, Locations } =
-            await getSingleModule(
-                new URL("./definitions/static.pest", import.meta.url)
-            );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const coord = [
             { x: 1, y: 2 },
             { x: 1, y: 2 }
@@ -47,20 +46,6 @@ describe("unnested arrays", async () => {
     });
 
     it("should stay intact with dynamic struct arrays", async () => {
-        const { serialize, deserialize, materialize, Map } =
-            await getSingleModule(
-                new URL("./definitions/dynamic.pest", import.meta.url)
-            );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const map = [
             {
                 locations: [
@@ -147,11 +132,6 @@ describe("unnested arrays", async () => {
     });
 
     it("should work as an array", async () => {
-        const { serialize, deserialize, materialize, Coordinate } =
-            await getSingleModule(
-                new URL("./definitions/static.pest", import.meta.url)
-            );
-
         const coord = [
             { x: 1, y: 2 },
             { x: 1, y: 2 }
@@ -165,25 +145,6 @@ describe("unnested arrays", async () => {
     });
 
     it("should stay intact with static struct arrays", async () => {
-        const {
-            serialize,
-            deserialize,
-            materialize,
-            NullableCoordArray,
-            NullableLocationArray
-        } = await getSingleModule(
-            new URL("./definitions/static.pest", import.meta.url)
-        );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const coord = [null, { x: 1, y: 2 }];
         expect(coord).toEqual(mirror(coord, NullableCoordArray, deserialize));
         expect(coord).toEqual(mirror(coord, NullableCoordArray, materialize));
@@ -204,20 +165,6 @@ describe("unnested arrays", async () => {
     });
 
     it("should stay intact with dynamic struct arrays", async () => {
-        const { serialize, deserialize, materialize, NullableMapArray } =
-            await getSingleModule(
-                new URL("./definitions/dynamic.pest", import.meta.url)
-            );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const map = [
             {
                 locations: [
@@ -268,20 +215,6 @@ describe("unnested arrays", async () => {
 
 describe("nested arrays", async () => {
     it("should stay intact with static struct arrays", async () => {
-        const { serialize, deserialize, materialize, Coordinate, Locations } =
-            await getSingleModule(
-                new URL("./definitions/static.pest", import.meta.url)
-            );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const coord = [
             [
                 { x: 1, y: 2 },
@@ -326,20 +259,6 @@ describe("nested arrays", async () => {
     });
 
     it("should stay intact with dynamic struct arrays", async () => {
-        const { serialize, deserialize, materialize, Map } =
-            await getSingleModule(
-                new URL("./definitions/dynamic.pest", import.meta.url)
-            );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const map = [
             [
                 {
@@ -577,11 +496,6 @@ describe("nested arrays", async () => {
     });
 
     it("should work as an array", async () => {
-        const { serialize, deserialize, materialize, Coordinate } =
-            await getSingleModule(
-                new URL("./definitions/static.pest", import.meta.url)
-            );
-
         const coord = [
             [
                 { x: 1, y: 2 },
@@ -607,25 +521,6 @@ describe("nested arrays", async () => {
     });
 
     it("should stay intact with nullish static struct arrays", async () => {
-        const {
-            serialize,
-            deserialize,
-            materialize,
-            NullableCoordArrayArray,
-            NullableLocations
-        } = await getSingleModule(
-            new URL("./definitions/static.pest", import.meta.url)
-        );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const coord = [
             null,
             [
@@ -671,20 +566,6 @@ describe("nested arrays", async () => {
     });
 
     it("should stay intact with nullish dynamic struct arrays", async () => {
-        const { serialize, deserialize, materialize, NullableMapArrayArray } =
-            await getSingleModule(
-                new URL("./definitions/dynamic.pest", import.meta.url)
-            );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const map = [
             null,
             [
@@ -833,20 +714,6 @@ describe("nested arrays", async () => {
 
 describe("unnested typed arrays", async () => {
     it("should stay intact with typed arrays", async () => {
-        const { serialize, deserialize, materialize, HorseRace } =
-            await getSingleModule(
-                new URL("./definitions/typedarray.pest", import.meta.url)
-            );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const races = {
             horses: ["Horsey"],
             times: new Float64Array([1.0])
@@ -869,11 +736,6 @@ describe("unnested typed arrays", async () => {
     });
 
     it("should work as a typedarray", async () => {
-        const { serialize, deserialize, materialize, HorseRace } =
-            await getSingleModule(
-                new URL("./definitions/typedarray.pest", import.meta.url)
-            );
-
         const races = [
             {
                 horses: ["Horsey", "McHorseface", "Horsea", "Horseb"],
@@ -894,20 +756,6 @@ describe("unnested typed arrays", async () => {
     });
 
     it("should stay intact with nullish non-typed arrays", async () => {
-        const { serialize, deserialize, materialize, HorseRaceSomeHorsesDied } =
-            await getSingleModule(
-                new URL("./definitions/typedarray.pest", import.meta.url)
-            );
-
-        function mirror<T>(
-            data: T,
-            schema: PestType<unknown>,
-            f: typeof materialize
-        ): T {
-            const serialized = serialize(data, schema);
-            return f(serialized, schema) as T;
-        }
-
         const races = {
             horses: ["Horsey"],
             times: [1.0, null]

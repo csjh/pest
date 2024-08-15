@@ -1,4 +1,4 @@
-import { nofunc } from "./primitives.js";
+import { nofunc } from "./index.js";
 import type {
     AcceptBroad,
     BufferWriters,
@@ -68,7 +68,6 @@ export function serialize_array(
 
 function get_serializer(ty: PestTypeInternal): Serializer {
     if (ty.s !== nofunc) return ty.s;
-    if (ty.i < 0) return (ty.s = get_serializer(ty.e!));
 
     let prelude = "var _";
     let fn = `var f,s=p;p+=${ty.y + ty.u};`;
@@ -130,14 +129,7 @@ export function serialize<T>(
         u: new Uint8Array(buffer)
     };
 
-    if (_schema.i === -1) {
-        let e = _schema;
-        while (e.i === -1) e = e.e!;
-        writers.d.setInt32(0, Math.abs(e.i) | (1 << 31), true);
-        writers.d.setUint32(4, _schema.y, true);
-    } else {
-        writers.d.setInt32(0, Math.abs(_schema.i), true);
-    }
-    const ptr = get_serializer(_schema)(writers, 8, data);
+    writers.d.setInt32(0, _schema.i, true);
+    const ptr = get_serializer(_schema)(writers, 4, data);
     return writers.u.subarray(0, ptr);
 }

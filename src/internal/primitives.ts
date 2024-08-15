@@ -1,8 +1,7 @@
+import { nofunc } from "./index.js";
 import { PestArray } from "./materialize.js";
 import { reserve, serialize_array } from "./serialize.js";
 import { BufferWriters, Deserializer, PestType, PestTypeInternal, Serializer } from "./types.js";
-
-export const nofunc = function (): any {};
 
 /* @__PURE__ */
 function primitive(i: number, size: number, s: Serializer, d: Deserializer): PestType<unknown> {
@@ -53,21 +52,56 @@ export const u64 =     /* @__PURE__ */ primitive( 7, 8, (w, ptr, data) => (w.d.s
 export const f32 =     /* @__PURE__ */ primitive( 8, 4, (w, ptr, data) => (w.d.setFloat32  (ptr, data, true),  ptr + 4), (ptr, dv) => dv.getFloat32  (ptr, true))         as PestType<number>;
 export const f64 =     /* @__PURE__ */ primitive( 9, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, data, true),  ptr + 8), (ptr, dv) => dv.getFloat64  (ptr, true))         as PestType<number>;
 export const boolean = /* @__PURE__ */ primitive(10, 1, (w, ptr, data) => (w.d.setUint8    (ptr, data? 1 : 0), ptr + 1), (ptr, dv) => dv.getUint8    (ptr) !== 0)         as PestType<boolean>;
-const _Date =          /* @__PURE__ */ primitive(11, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, +data, true), ptr + 8), (ptr, dv) => new Date(dv.getFloat64(ptr, true))) as PestType<Date>;
+export const date =    /* @__PURE__ */ primitive(11, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, +data, true), ptr + 8), (ptr, dv) => new Date(dv.getFloat64(ptr, true))) as PestType<Date>;
 export const string =  /* @__PURE__ */ primitive(12, 0, encode_string, (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))))          as PestType<string>;
-const _RegExp =        /* @__PURE__ */ primitive(13, 0, (w, ptr, data): number => encode_string(w, ptr,`${data.flags}\0${data.source}`), (ptr, dv) => {
+export const regexp =  /* @__PURE__ */ primitive(13, 0, (w, ptr, data): number => encode_string(w, ptr,`${data.flags}\0${data.source}`), (ptr, dv) => {
     const [flags, source] = (string as any).m(ptr, dv).split('\0', 2);
     return RegExp(source, flags);
 }) as PestType<RegExp>;
 
-export { _Date as Date, _RegExp as RegExp };
+export function struct<T>(fields: { [K in keyof T]: PestType<T[K]> }): PestType<T> {
+    let dynamics = 0;
+    let nulls = 0;
+    let size = 0;
+    const entries = Object.entries(fields) as [string, PestTypeInternal][];
 
-export function array<T>(e: PestType<T>, depth: number = 1): PestType<T[]> {
-    if (!depth) return e as unknown as PestType<T[]>;
+    let hash = 0;
+    for (const [k, v] of entries) {
+        if (!v.z) dynamics++;
+        if (v.n) nulls++;
+        size += v.z;
+        let shash = 0;
+        for (let i = 0; i < k.length; i++) {
+            shash = (Math.imul(shash, 31) + k.charCodeAt(i)) | 0;
+        }
+        hash = (Math.imul(hash, 31) + (shash ^ v.i)) | 0;
+    }
+
+    return {
+        i: hash,
+        y: dynamics && (dynamics - 1) * 4,
+        u: (nulls + 7) >>> 3,
+        f: Object.fromEntries(entries.sort((a, b) => b[1].z - a[1].z)),
+        z: size * +!dynamics,
+        n: 0,
+        e: null,
+        s: nofunc,
+        d: nofunc,
+        m: nofunc
+    } satisfies PestTypeInternal as unknown as ReturnType<typeof struct<T>>;
+}
+
+type DeepArray<E, T extends number, Counter extends any[] = []> = Counter["length"] extends T? E : DeepArray<E[], T, [...Counter, 0]>;
+
+// @ts-expect-error
+export function array<E, D extends number = 1>(e: PestType<E>, depth: D = 1): PestType<number extends D ? unknown : DeepArray<E, D>> {
+    // @ts-expect-error
+    depth |= 0;
+    if (!depth) return e as unknown as ReturnType<typeof array<E, D>>;
     const el = array(e, depth - 1) as unknown as PestTypeInternal;
     return {
-        i: -1,
-        y: depth >>> 0,
+        i: (e as unknown as PestTypeInternal).i ^ depth,
+        y: depth,
         u: 0,
         f: {},
         z: 0,
@@ -77,9 +111,13 @@ export function array<T>(e: PestType<T>, depth: number = 1): PestType<T[]> {
         // the same as the above isn't done because i don't want ./deserialize.ts to be shipped unless explicitly imported
         d: nofunc,
         m: (ptr, dv) => PestArray(ptr, dv, el)
-    } satisfies PestTypeInternal as unknown as PestType<T[]>;
+    } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;
 }
 
-export function nullable(t: PestTypeInternal): PestTypeInternal {
-    return { ...t, n: 1 };
+export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
+    return {
+        ...(t as unknown as PestTypeInternal),
+        i: ~(t as unknown as PestTypeInternal).i,
+        n: 1
+    } satisfies PestTypeInternal as unknown as ReturnType<typeof nullable<T>>;
 }

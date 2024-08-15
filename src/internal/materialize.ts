@@ -1,5 +1,5 @@
 import { TypedArrays } from "./index.js";
-import { nofunc } from "./primitives.js";
+import { nofunc } from "./index.js";
 import type { Materializer, PestType, PestTypeInternal } from "./types.js";
 
 export function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
@@ -35,7 +35,6 @@ export function PestArray(ptr: number, dv: DataView, ty: PestTypeInternal) {
 
 function get_materialized(ty: PestTypeInternal): Materializer {
     if (ty.m !== nofunc) return ty.m;
-    if (ty.i < 0) return (ty.m = get_materialized(ty.e!));
 
     // values start after the offset table
     let pos = ty.y + ty.u;
@@ -85,23 +84,11 @@ export function materialize<T>(
     const dv = new DataView(buffer);
 
     const type_id = dv.getInt32(0, true);
-    const depth = dv.getUint32(4, true);
-    if (type_id < 0) {
-        if (internal.i !== -1) {
-            throw new Error("Expected array type");
-        }
-        if (depth !== internal.y) {
-            throw new Error("Depth mismatch");
-        }
-        let e = internal;
-        while (e.i === -1) e = e.e!;
-        if ((type_id & 0x7fffffff) !== Math.abs(e.i)) {
-            throw new Error("Type mismatch");
-        }
-        // typedefs are negative
-    } else if (type_id !== Math.abs(internal.i)) {
-        throw new Error("Type mismatch");
+    if (type_id !== internal.i) {
+        throw new Error(
+            `Type mismatch: expected ${internal.i}, got ${type_id}`
+        );
     }
-    // 8 = skip over type id and depth
-    return get_materialized(internal)(8, dv) as T;
+    // 4 = skip over type id and depth
+    return get_materialized(internal)(4, dv) as T;
 }
