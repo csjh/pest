@@ -44,7 +44,7 @@ function get_materialized(ty: PestTypeInternal): Materializer {
     let prelude = "var _";
     let fn = `{`;
     let i = 0;
-    for (const [name, field] of ty.f) {
+    for (const [name, field] of ty.f as [string, PestTypeInternal][]) {
         get_materialized(field); // ensure materializer is cached
         /*
         one of four forms:

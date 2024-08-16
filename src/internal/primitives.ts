@@ -59,6 +59,14 @@ export const regexp =  /* @__PURE__ */ primitive(13, 0, (w, ptr, data): number =
     return RegExp(source, flags);
 }) as PestType<RegExp>;
 
+function string_hash(s: string) {
+    let hash = 0;
+    for (let i = 0; i < s.length; i++) {
+        hash = (Math.imul(hash, 31) + s.charCodeAt(i)) | 0;
+    }
+    return hash;
+}
+
 export function struct<T>(fields: { [K in keyof T]: PestType<T[K]> }): PestType<T> {
     let dynamics = 0;
     let nulls = 0;
@@ -70,11 +78,7 @@ export function struct<T>(fields: { [K in keyof T]: PestType<T[K]> }): PestType<
         if (!v.z) dynamics++;
         if (v.n) nulls++;
         size += v.z;
-        let shash = 0;
-        for (let i = 0; i < k.length; i++) {
-            shash = (Math.imul(shash, 31) + k.charCodeAt(i)) | 0;
-        }
-        hash = (Math.imul(hash, 31) + (shash ^ v.i)) | 0;
+        hash = (Math.imul(hash, 31) + (string_hash(k) ^ v.i)) | 0;
     }
 
     return {
@@ -147,3 +151,23 @@ export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
 //         m: (ptr, dv) => materialize_array(ptr, dv, el)
 //     } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;
 // }
+export { enum_ as enum };
+export function enum_<const T extends string[]>(...values: T): PestType<T[number]> {
+    let hash = 0;
+    for (const v of values) {
+        hash = (Math.imul(hash, 31) ^ string_hash(v)) | 0;
+    }
+
+    return {
+        i: hash,
+        y: 0,
+        u: 0,
+        f: values,
+        z: 1,
+        n: 0,
+        e: null,
+        s: (writers, ptr, data) => writers.u[ptr] = values.indexOf(data as any),
+        d: (ptr, dv) => values[dv.getUint8(ptr)],
+        m: (ptr, dv) => values[dv.getUint8(ptr)],
+    } satisfies PestTypeInternal as unknown as ReturnType<typeof enum_<T>>;
+}

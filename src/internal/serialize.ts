@@ -76,7 +76,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
     let nulls = 0;
     let pos = 0;
     let i = 0;
-    for (const [name, type] of ty.f) {
+    for (const [name, type] of ty.f as [string, PestTypeInternal][]) {
         get_serializer(type); // ensure serializer is cached
 
         /*
