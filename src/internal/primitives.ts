@@ -17,8 +17,9 @@ function primitive(
     d: Deserializer,
     w: PestTypeInternal["w"] = (data) => +(typeof data === "number")
 ): PestType<unknown> {
+    const obj = { i, y: 0, u: 0, f: [], z: size, n: 0, e: null, w, s, d, m: d } satisfies PestTypeInternal;
     // @ts-expect-error i'm lying!
-    return { i, y: 0, u: 0, f: {}, z: size, n: 0, e: null, w, s, d, m: d };
+    return obj;
 }
 
 const encoder = new TextEncoder();
