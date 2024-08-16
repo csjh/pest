@@ -170,30 +170,11 @@ export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
     } satisfies PestTypeInternal as unknown as ReturnType<typeof nullable<T>>;
 }
 
-// todo: turn enums into union of literals?
 export { enum_ as enum };
-export function enum_<const T extends string[]>(
+export function enum_<const T extends unknown[]>(
     ...values: T
 ): PestType<T[number]> {
-    let hash = 0;
-    for (const v of values) {
-        hash = (Math.imul(hash, 31) ^ string_hash(v)) | 0;
-    }
-
-    return {
-        i: hash,
-        y: 0,
-        u: 0,
-        f: [],
-        z: 1,
-        n: 0,
-        e: null,
-        w: (data) => +values.includes(data as any),
-        s: (writers, ptr, data) =>
-            (writers.u[ptr] = values.indexOf(data as any)),
-        d: (ptr, dv) => values[dv.getUint8(ptr)],
-        m: (ptr, dv) => values[dv.getUint8(ptr)]
-    } satisfies PestTypeInternal as unknown as ReturnType<typeof enum_<T>>;
+    return union(...values.map(literal));
 }
 
 type UnionType<T extends PestType<unknown>[]> = T extends [PestType<infer U>]
@@ -243,7 +224,7 @@ export function literal<const T>(value: T): PestType<T> {
         z: 1,
         n: 0,
         e: null,
-        w: (data) => +(data === value || typeof data === "object"),
+        w: (data) => +(data === value || (typeof data === 'object' && typeof value === 'object')),
         s: (_, ptr) => ptr,
         d: () => value,
         m: () => value
