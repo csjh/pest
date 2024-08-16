@@ -120,11 +120,11 @@ function get_serializer(ty: PestTypeInternal): Serializer {
                 : `f=p;`
         }${
             type.n
-                ? `a.${name}==null?(p+=${type.z},w.u[s+${ty.y + (nulls >>> 3)}]|=${1 << (nulls & 7)}):` : ""
-        }p=_${name}(w,p,a.${name});`;
+            ? `a[${JSON.stringify(name)}]==null?(p+=${type.z},w.u[s+${ty.y + (nulls >>> 3)}]|=${1 << (nulls & 7)}):` : ""
+            }p=_${i}(w,p,a[${JSON.stringify(name)}]);`;
 
         // TODO: experiment more with inlining
-        prelude += `,_${name}=t[${i++}][1].s`;
+        prelude += `,_${i}=t[${i++}][1].s`;
 
         pos += type.z;
         // @ts-expect-error cry

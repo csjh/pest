@@ -65,12 +65,12 @@ function get_materialized(ty: PestTypeInternal): Materializer {
             output[name] = field.m(p + pos + dv.getUint32(p + dynamics * 4, true), dv)
         */
         // prettier-ignore
-        fn += `${name}:${
+        fn += `${JSON.stringify(name)}:${
             field.n ? `d.getUint8(p+${ty.y + (nulls >>> 3)})&${1 << (nulls & 7)}?null:` : ""
-        }_${name}(p+${pos}${
+        }_${i}(p+${pos}${
             dynamics ? `+d.getUint32(p+${(dynamics - 1) * 4},!0)` : ""
         },d),`;
-        prelude += `,_${name}=f[${i++}][1].m`;
+        prelude += `,_${i}=f[${i++}][1].m`;
 
         pos += field.z;
         // @ts-expect-error cry
