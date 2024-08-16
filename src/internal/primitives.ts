@@ -126,31 +126,6 @@ export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
     } satisfies PestTypeInternal as unknown as ReturnType<typeof nullable<T>>;
 }
 
-// type UnionType<T extends PestType<unknown>[]> = 
-//     T extends [PestType<infer U>]
-//     ? U
-//     : T extends [PestType<infer U>, ...infer R extends PestType<unknown>[]]
-//     ? U | UnionType<R>
-//     : never;
-
-// export function union<const T extends PestType<unknown>[]>(...types: T): PestType<UnionType<T>> {
-//     let hash = 0;
-//     for (const t of types) {
-//         hash = (Math.imul(hash, 31) + (t as unknown as PestTypeInternal).i) | 0;
-//     }
-//     return {
-//         i: hash,
-//         y: 1,
-//         u: 0,
-//         f: {},
-//         z: 0,
-//         n: 0,
-//         e: null,
-//         s: (writers, ptr, data) => serialize_array(el, writers, ptr, data),
-//         d: (ptr, dv) => {},
-//         m: (ptr, dv) => materialize_array(ptr, dv, el)
-//     } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;
-// }
 export { enum_ as enum };
 export function enum_<const T extends string[]>(...values: T): PestType<T[number]> {
     let hash = 0;
@@ -162,7 +137,7 @@ export function enum_<const T extends string[]>(...values: T): PestType<T[number
         i: hash,
         y: 0,
         u: 0,
-        f: values,
+        f: [],
         z: 1,
         n: 0,
         e: null,

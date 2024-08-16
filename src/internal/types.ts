@@ -14,7 +14,7 @@ export type Materializer = (ptr: number, dv: DataView) => unknown;
 export interface PestTypeInternal {
     /** id */
     i: number;
-    /** length of dynamic offset table or depth of array */
+    /** length of dynamic offset table */
     y: number;
     /** length of null offset table */
     u: number;
