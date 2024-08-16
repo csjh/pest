@@ -43,8 +43,8 @@ function get_materialized(ty: PestTypeInternal): Materializer {
 
     let prelude = "var _";
     let fn = `{`;
-    for (const name in ty.f) {
-        const field = ty.f[name];
+    let i = 0;
+    for (const [name, field] of ty.f) {
         get_materialized(field); // ensure materializer is cached
         /*
         one of four forms:
@@ -61,7 +61,7 @@ function get_materialized(ty: PestTypeInternal): Materializer {
         }_${name}(p+${pos}${
             dynamics ? `+d.getUint32(p+${(dynamics - 1) * 4},!0)` : ""
         },d),`;
-        prelude += `,_${name}=f.${name}.m`;
+        prelude += `,_${name}=f[${i++}][1].m`;
 
         pos += field.z;
         // @ts-expect-error cry

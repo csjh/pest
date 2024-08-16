@@ -81,7 +81,7 @@ export function struct<T>(fields: { [K in keyof T]: PestType<T[K]> }): PestType<
         i: hash,
         y: dynamics && (dynamics - 1) * 4,
         u: (nulls + 7) >>> 3,
-        f: Object.fromEntries(entries.sort((a, b) => b[1].z - a[1].z)),
+        f: entries.sort((a, b) => b[1].z - a[1].z),
         z: size * +!dynamics,
         n: 0,
         e: null,
@@ -101,9 +101,9 @@ export function array<E, D extends number = 1>(e: PestType<E>, depth: D = 1): Pe
     const el = array(e, depth - 1) as unknown as PestTypeInternal;
     return {
         i: ((e as unknown as PestTypeInternal).i + depth) | 0,
-        y: depth,
+        y: 0,
         u: 0,
-        f: {},
+        f: [],
         z: 0,
         n: 0,
         e: el,
@@ -121,3 +121,29 @@ export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
         n: 1
     } satisfies PestTypeInternal as unknown as ReturnType<typeof nullable<T>>;
 }
+
+// type UnionType<T extends PestType<unknown>[]> = 
+//     T extends [PestType<infer U>]
+//     ? U
+//     : T extends [PestType<infer U>, ...infer R extends PestType<unknown>[]]
+//     ? U | UnionType<R>
+//     : never;
+
+// export function union<const T extends PestType<unknown>[]>(...types: T): PestType<UnionType<T>> {
+//     let hash = 0;
+//     for (const t of types) {
+//         hash = (Math.imul(hash, 31) + (t as unknown as PestTypeInternal).i) | 0;
+//     }
+//     return {
+//         i: hash,
+//         y: 1,
+//         u: 0,
+//         f: {},
+//         z: 0,
+//         n: 0,
+//         e: null,
+//         s: (writers, ptr, data) => serialize_array(el, writers, ptr, data),
+//         d: (ptr, dv) => {},
+//         m: (ptr, dv) => materialize_array(ptr, dv, el)
+//     } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;
+// }

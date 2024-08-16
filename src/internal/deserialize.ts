@@ -85,8 +85,7 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
 
     const creator: PropertyDescriptorMap = { ...base };
 
-    for (const name in ty.f) {
-        const field = ty.f[name];
+    for (const [name, field] of ty.f) {
         // same as in materialize.ts, but lazily
         creator[name] = {
             get: new Function(

@@ -75,8 +75,8 @@ function get_serializer(ty: PestTypeInternal): Serializer {
     let dynamics = 0;
     let nulls = 0;
     let pos = 0;
-    for (const name in ty.f) {
-        const type = ty.f[name];
+    let i = 0;
+    for (const [name, type] of ty.f) {
         get_serializer(type); // ensure serializer is cached
 
         /*
@@ -104,7 +104,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
         }p=_${name}(w,p,a.${name});`;
 
         // TODO: experiment more with inlining
-        prelude += `,_${name}=t.${name}.s`;
+        prelude += `,_${name}=t[${i++}][1].s`;
 
         pos += type.z;
         // @ts-expect-error cry
