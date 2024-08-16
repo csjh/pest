@@ -169,6 +169,7 @@ export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
     } satisfies PestTypeInternal as unknown as ReturnType<typeof nullable<T>>;
 }
 
+// todo: turn enums into union of literals?
 export { enum_ as enum };
 export function enum_<const T extends string[]>(
     ...values: T
@@ -225,4 +226,25 @@ export function union<const T extends PestType<unknown>[]>(
         d: nofunc,
         m: nofunc
     } satisfies PestTypeInternal as unknown as ReturnType<typeof union<T>>;
+}
+
+export function literal<const T>(value: T): PestType<T> {
+    return {
+        i: string_hash(
+            JSON.stringify(value, (_, v) =>
+                typeof v === "bigint" ? v.toString() : v
+            )
+        ),
+        y: 0,
+        u: 0,
+        f: [],
+        // occupies a whole byte because z = 0 is used for dynamic types >:(
+        z: 1,
+        n: 0,
+        e: null,
+        w: (data) => +(data === value || typeof data === "object"),
+        s: (_, ptr) => ptr,
+        d: () => value,
+        m: () => value
+    } satisfies PestTypeInternal as unknown as ReturnType<typeof literal<T>>;
 }
