@@ -1,10 +1,21 @@
 import { nofunc } from "./index.js";
 import { materialize_array } from "./materialize.js";
 import { reserve, serialize_array } from "./serialize.js";
-import { BufferWriters, Deserializer, PestType, PestTypeInternal, Serializer } from "./types.js";
+import {
+    BufferWriters,
+    Deserializer,
+    PestType,
+    PestTypeInternal,
+    Serializer
+} from "./types.js";
 
 /* @__PURE__ */
-function primitive(i: number, size: number, s: Serializer, d: Deserializer): PestType<unknown> {
+function primitive(
+    i: number,
+    size: number,
+    s: Serializer,
+    d: Deserializer
+): PestType<unknown> {
     // @ts-expect-error i'm lying!
     return { i, y: 0, u: 0, f: {}, z: size, n: 0, e: null, s, d, m: d };
 }
@@ -67,7 +78,9 @@ function string_hash(s: string) {
     return hash;
 }
 
-export function struct<T>(fields: { [K in keyof T]: PestType<T[K]> }): PestType<T> {
+export function struct<T>(fields: {
+    [K in keyof T]: PestType<T[K]>;
+}): PestType<T> {
     let dynamics = 0;
     let nulls = 0;
     let size = 0;
@@ -95,10 +108,17 @@ export function struct<T>(fields: { [K in keyof T]: PestType<T[K]> }): PestType<
     } satisfies PestTypeInternal as unknown as ReturnType<typeof struct<T>>;
 }
 
-type DeepArray<E, T extends number, Counter extends any[] = []> = Counter["length"] extends T? E : DeepArray<E[], T, [...Counter, 0]>;
+type DeepArray<
+    E,
+    T extends number,
+    Counter extends any[] = []
+> = Counter["length"] extends T ? E : DeepArray<E[], T, [...Counter, 0]>;
 
-// @ts-expect-error
-export function array<E, D extends number = 1>(e: PestType<E>, depth: D = 1): PestType<number extends D ? unknown : DeepArray<E, D>> {
+export function array<E, D extends number = 1>(
+    e: PestType<E>,
+    // @ts-expect-error
+    depth: D = 1
+): PestType<number extends D ? unknown : DeepArray<E, D>> {
     // @ts-expect-error
     depth |= 0;
     if (!depth) return e as unknown as ReturnType<typeof array<E, D>>;
@@ -127,7 +147,9 @@ export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
 }
 
 export { enum_ as enum };
-export function enum_<const T extends string[]>(...values: T): PestType<T[number]> {
+export function enum_<const T extends string[]>(
+    ...values: T
+): PestType<T[number]> {
     let hash = 0;
     for (const v of values) {
         hash = (Math.imul(hash, 31) ^ string_hash(v)) | 0;
@@ -141,8 +163,9 @@ export function enum_<const T extends string[]>(...values: T): PestType<T[number
         z: 1,
         n: 0,
         e: null,
-        s: (writers, ptr, data) => writers.u[ptr] = values.indexOf(data as any),
+        s: (writers, ptr, data) =>
+            (writers.u[ptr] = values.indexOf(data as any)),
         d: (ptr, dv) => values[dv.getUint8(ptr)],
-        m: (ptr, dv) => values[dv.getUint8(ptr)],
+        m: (ptr, dv) => values[dv.getUint8(ptr)]
     } satisfies PestTypeInternal as unknown as ReturnType<typeof enum_<T>>;
 }
