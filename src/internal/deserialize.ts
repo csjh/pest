@@ -65,9 +65,7 @@ function deserialize_array(ptr: number, dv: DataView, ty: PestTypeInternal) {
         return new TypedArrays[ty.i](dv.buffer, ptr, len);
     }
 
-    get_deserializer(ty);
-    const arr = [len, ty, dv, ptr] satisfies ProxyArray;
-    return new Proxy(arr, handler);
+    return new Proxy([len, ty, dv, ptr], handler);
 }
 
 const base = {
@@ -76,7 +74,10 @@ const base = {
 };
 function get_deserializer(ty: PestTypeInternal): Deserializer {
     if (ty.d !== nofunc) return ty.d;
-    if (ty.e) return (ty.d = (ptr, dv) => deserialize_array(ptr, dv, ty.e!));
+    if (ty.e) {
+        get_deserializer(ty.e);
+        return (ty.d = (ptr, dv) => deserialize_array(ptr, dv, ty.e!));
+    }
 
     // values start after the offset table
     let pos = ty.y + ty.u;
