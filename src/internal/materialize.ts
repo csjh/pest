@@ -39,6 +39,11 @@ export function materialize_array(
 
 function get_materialized(ty: PestTypeInternal): Materializer {
     if (ty.m !== nofunc) return ty.m;
+    if (ty.y === 1) {
+        (ty.f as PestTypeInternal[]).forEach(get_materialized);
+        return (ty.d = (ptr, dv) =>
+            (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].m(ptr + 1, dv));
+    }
 
     // values start after the offset table
     let pos = ty.y + ty.u;

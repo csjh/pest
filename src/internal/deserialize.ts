@@ -74,6 +74,11 @@ const base = {
 };
 function get_deserializer(ty: PestTypeInternal): Deserializer {
     if (ty.d !== nofunc) return ty.d;
+    if (ty.y === 1) {
+        (ty.f as PestTypeInternal[]).forEach(get_deserializer);
+        return (ty.d = (ptr, dv) =>
+            (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].d(ptr + 1, dv));
+    }
     if (ty.e) {
         get_deserializer(ty.e);
         return (ty.d = (ptr, dv) => deserialize_array(ptr, dv, ty.e!));

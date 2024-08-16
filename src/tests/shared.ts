@@ -10,7 +10,8 @@ import {
     PestType,
     serialize,
     string,
-    struct
+    struct,
+    union
 } from "../internal/index.js";
 
 export const Coordinate = struct({
@@ -78,6 +79,10 @@ export const HorseRaceSomeHorsesDied = struct({
     horses: array(string),
     times: array(nullable(f64))
 });
+
+export const PrimitiveUnion = union(i32, string, boolean);
+export const Union = union(i32, string, boolean, Coordinate);
+export const NullableUnionArray = array(nullable(Union));
 
 export function mirror<T>(
     data: T,

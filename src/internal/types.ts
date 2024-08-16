@@ -14,18 +14,20 @@ export type Materializer = (ptr: number, dv: DataView) => unknown;
 export interface PestTypeInternal {
     /** id */
     i: number;
-    /** length of dynamic offset table */
+    /** length of dynamic offset table - being set to 1 can be used to determine that a type is a union */
     y: number;
     /** length of null offset table */
     u: number;
-    /** fields partitioned by dynamic-ness */
-    f: [string, PestTypeInternal][];
+    /** fields partitioned by dynamic-ness, or union members */
+    f: [string, PestTypeInternal][] | PestTypeInternal[];
     /** sizeof */
     z: number;
     /** whether or not it can be null */
     n: 1 | 0;
     /** element type (for arrays) */
     e: PestTypeInternal | null;
+    /** how much data fits this type */
+    w: (data: any) => number;
     /** cached serializer */
     s: Serializer;
     /** cached deserializer */
