@@ -2,7 +2,11 @@ import { TypedArrays } from "./index.js";
 import { nofunc } from "./index.js";
 import type { Materializer, PestType, PestTypeInternal } from "./types.js";
 
-export function materialize_array(ptr: number, dv: DataView, ty: PestTypeInternal) {
+export function materialize_array(
+    ptr: number,
+    dv: DataView,
+    ty: PestTypeInternal
+) {
     const len = dv.getUint32(ptr, true);
     ptr += 4;
     if (0 <= ty.i && ty.i < 10 && !ty.n) {
@@ -11,7 +15,7 @@ export function materialize_array(ptr: number, dv: DataView, ty: PestTypeInterna
         return new TypedArrays[ty.i](dv.buffer, ptr, len);
     }
 
-    const arr = Array(len);
+    const arr = Array.from({ length: len });
     get_materialized(ty); // ensure materializer is cached
     for (let i = 0; i < len; i++) {
         if (
