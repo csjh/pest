@@ -195,7 +195,9 @@ export function union<const T extends PestType<unknown>[]>(
         y: 1,
         u: 0,
         f: types as unknown[] as PestTypeInternal[],
-        z: 0,
+        z: types.every((t) => (t as unknown as PestTypeInternal).z === (types[0] as unknown as PestTypeInternal).z)
+            ? 1 + (types[0] as unknown as PestTypeInternal).z
+            : 0,
         n: 0,
         e: null,
         w: (data) =>

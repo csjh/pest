@@ -21,8 +21,7 @@ import {
     LocationsMaybeNoWork,
     MapSketchyLocations,
     Map,
-    mirror,
-    PrimitiveUnion
+    mirror
 } from "./shared.js";
 
 describe("definitions", async () => {
@@ -181,6 +180,37 @@ describe("enums", () => {
 
         expect("PUT").toEqual(mirror("PUT", Endpoint, deserialize));
         expect("PUT").toEqual(mirror("PUT", Endpoint, materialize));
+    });
+
+    it("should work with enums in arrays", () => {
+        const EndpointArray = array(enum_("GET", "POST", "PUT"));
+
+        const arr = ["GET", "POST", "PUT"];
+        expect(arr).toEqual(mirror(arr, EndpointArray, deserialize));
+        expect(arr).toEqual(mirror(arr, EndpointArray, materialize));
+
+        const arr2 = ["GET", "GET", "GET"];
+        expect(arr2).toEqual(mirror(arr2, EndpointArray, deserialize));
+        expect(arr2).toEqual(mirror(arr2, EndpointArray, materialize));
+    });
+
+    it("should work with enums in structs", () => {
+        const EndpointStruct = struct({
+            method: enum_("GET", "POST", "PUT"),
+            route: string,
+            backup: enum_("GET", "POST", "PUT"),
+            backup2: enum_("GET", "POST", "PUT")
+        });
+
+        const endpoint = {
+            method: "GET",
+            route: "/endpoint",
+            backup: "POST",
+            backup2: "PUT"
+        };
+
+        expect(endpoint).toEqual(mirror(endpoint, EndpointStruct, deserialize));
+        expect(endpoint).toEqual(mirror(endpoint, EndpointStruct, materialize));
     });
 });
 
