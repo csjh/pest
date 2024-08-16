@@ -54,20 +54,20 @@ function encode_string(w: BufferWriters, ptr: number, data: string): number {
     return ptr + length;
 }
 
-export const i8 =      /* @__PURE__ */ primitive( 0, 1, (w, ptr, data) => (w.d.setInt8     (ptr, data),        ptr + 1), (ptr, dv) =>          dv.getInt8     (ptr)                                               ) as PestType<number>;
-export const i16 =     /* @__PURE__ */ primitive( 1, 2, (w, ptr, data) => (w.d.setInt16    (ptr, data, true),  ptr + 2), (ptr, dv) =>          dv.getInt16    (ptr, true )                                        ) as PestType<number>;
-export const i32 =     /* @__PURE__ */ primitive( 2, 4, (w, ptr, data) => (w.d.setInt32    (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getInt32    (ptr, true )                                        ) as PestType<number>;
-export const i64 =     /* @__PURE__ */ primitive( 3, 8, (w, ptr, data) => (w.d.setBigInt64 (ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getBigInt64 (ptr, true ), (data) => +(typeof data === 'bigint') ) as PestType<bigint>;
-export const u8 =      /* @__PURE__ */ primitive( 4, 1, (w, ptr, data) => (w.d.setUint8    (ptr, data),        ptr + 1), (ptr, dv) =>          dv.getUint8    (ptr)                                               ) as PestType<number>;
-export const u16 =     /* @__PURE__ */ primitive( 5, 2, (w, ptr, data) => (w.d.setUint16   (ptr, data, true),  ptr + 2), (ptr, dv) =>          dv.getUint16   (ptr, true )                                        ) as PestType<number>;
-export const u32 =     /* @__PURE__ */ primitive( 6, 4, (w, ptr, data) => (w.d.setUint32   (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getUint32   (ptr, true )                                        ) as PestType<number>;
-export const u64 =     /* @__PURE__ */ primitive( 7, 8, (w, ptr, data) => (w.d.setBigUint64(ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getBigUint64(ptr, true ), (data) => +(typeof data === 'bigint') ) as PestType<bigint>;
-export const f32 =     /* @__PURE__ */ primitive( 8, 4, (w, ptr, data) => (w.d.setFloat32  (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getFloat32  (ptr, true )                                        ) as PestType<number>;
-export const f64 =     /* @__PURE__ */ primitive( 9, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getFloat64  (ptr, true )                                        ) as PestType<number>;
-export const boolean = /* @__PURE__ */ primitive(10, 1, (w, ptr, data) => (w.d.setUint8    (ptr, data? 1 : 0), ptr + 1), (ptr, dv) =>          dv.getUint8    (ptr) !== 0 , (data) => +(typeof data === 'boolean')) as PestType<boolean>;
-export const date =    /* @__PURE__ */ primitive(11, 8, (w, ptr, data) => (w.d.setFloat64  (ptr, +data, true), ptr + 8), (ptr, dv) => new Date(dv.getFloat64  (ptr, true)), (data) => +(data instanceof Date)     ) as PestType<Date>;
-export const string =  /* @__PURE__ */ primitive(12, 0, encode_string, (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))),            (data) => +(typeof data === 'string') ) as PestType<string>;
-export const regexp =  /* @__PURE__ */ primitive(13, 0, (w, ptr, data): number => encode_string(w, ptr,`${data.flags}\0${data.source}`), (ptr, dv) => {
+export const i8 =      /* @__PURE__ */ primitive( 0,  1, (w, ptr, data) => (w.d.setInt8     (ptr, data),        ptr + 1), (ptr, dv) =>          dv.getInt8     (ptr)                                               ) as PestType<number>;
+export const i16 =     /* @__PURE__ */ primitive( 1,  2, (w, ptr, data) => (w.d.setInt16    (ptr, data, true),  ptr + 2), (ptr, dv) =>          dv.getInt16    (ptr, true )                                        ) as PestType<number>;
+export const i32 =     /* @__PURE__ */ primitive( 2,  4, (w, ptr, data) => (w.d.setInt32    (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getInt32    (ptr, true )                                        ) as PestType<number>;
+export const i64 =     /* @__PURE__ */ primitive( 3,  8, (w, ptr, data) => (w.d.setBigInt64 (ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getBigInt64 (ptr, true ), (data) => +(typeof data === 'bigint') ) as PestType<bigint>;
+export const u8 =      /* @__PURE__ */ primitive( 4,  1, (w, ptr, data) => (w.d.setUint8    (ptr, data),        ptr + 1), (ptr, dv) =>          dv.getUint8    (ptr)                                               ) as PestType<number>;
+export const u16 =     /* @__PURE__ */ primitive( 5,  2, (w, ptr, data) => (w.d.setUint16   (ptr, data, true),  ptr + 2), (ptr, dv) =>          dv.getUint16   (ptr, true )                                        ) as PestType<number>;
+export const u32 =     /* @__PURE__ */ primitive( 6,  4, (w, ptr, data) => (w.d.setUint32   (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getUint32   (ptr, true )                                        ) as PestType<number>;
+export const u64 =     /* @__PURE__ */ primitive( 7,  8, (w, ptr, data) => (w.d.setBigUint64(ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getBigUint64(ptr, true ), (data) => +(typeof data === 'bigint') ) as PestType<bigint>;
+export const f32 =     /* @__PURE__ */ primitive( 8,  4, (w, ptr, data) => (w.d.setFloat32  (ptr, data, true),  ptr + 4), (ptr, dv) =>          dv.getFloat32  (ptr, true )                                        ) as PestType<number>;
+export const f64 =     /* @__PURE__ */ primitive( 9,  8, (w, ptr, data) => (w.d.setFloat64  (ptr, data, true),  ptr + 8), (ptr, dv) =>          dv.getFloat64  (ptr, true )                                        ) as PestType<number>;
+export const boolean = /* @__PURE__ */ primitive(10,  1, (w, ptr, data) => (w.d.setUint8    (ptr, data? 1 : 0), ptr + 1), (ptr, dv) =>          dv.getUint8    (ptr) !== 0 , (data) => +(typeof data === 'boolean')) as PestType<boolean>;
+export const date =    /* @__PURE__ */ primitive(11,  8, (w, ptr, data) => (w.d.setFloat64  (ptr, +data, true), ptr + 8), (ptr, dv) => new Date(dv.getFloat64  (ptr, true)), (data) => +(data instanceof Date)     ) as PestType<Date>;
+export const string =  /* @__PURE__ */ primitive(12, -1, encode_string, (ptr, dv) => decoder.decode(new Uint8Array(dv.buffer, ptr + 4, dv.getUint32(ptr, true))),            (data) => +(typeof data === 'string') ) as PestType<string>;
+export const regexp =  /* @__PURE__ */ primitive(13, -1, (w, ptr, data): number => encode_string(w, ptr,`${data.flags}\0${data.source}`), (ptr, dv) => {
     const [flags, source] = (string as any).m(ptr, dv).split('\0', 2);
     return RegExp(source, flags);
 }, (data) => +(data instanceof RegExp)) as PestType<RegExp>;
@@ -90,9 +90,9 @@ export function struct<T>(fields: {
 
     let hash = 0;
     for (const [k, v] of entries) {
-        if (!v.z) dynamics++;
+        if (v.z < 0) dynamics++;
+        else size += v.z;
         if (v.n) nulls++;
-        size += v.z;
         hash = (Math.imul(hash, 31) + (string_hash(k) ^ v.i)) | 0;
     }
 
@@ -101,7 +101,7 @@ export function struct<T>(fields: {
         y: dynamics && (dynamics - 1) * 4,
         u: (nulls + 7) >>> 3,
         f: entries.sort((a, b) => b[1].z - a[1].z),
-        z: size * +!dynamics,
+        z: dynamics? -1 : size,
         n: 0,
         e: null,
         w: (data) => {
@@ -149,7 +149,7 @@ export function array<E, D extends number = 1>(
         y: 0,
         u: 0,
         f: [],
-        z: 0,
+        z: -1,
         n: 0,
         e: el,
         w: (data) => (data.length ? el.w(data[0]) : 1),
@@ -195,9 +195,12 @@ export function union<const T extends PestType<unknown>[]>(
         y: 1,
         u: 0,
         f: types as unknown[] as PestTypeInternal[],
-        z: types.every((t) => (t as unknown as PestTypeInternal).z === (types[0] as unknown as PestTypeInternal).z)
-            ? 1 + (types[0] as unknown as PestTypeInternal).z
-            : 0,
+        // if types are a uniform size then the union is also that size
+        // mostly just here so that enums are a single byte
+        // but should just occasionally help in general i guess
+        z: (types[0] as unknown as PestTypeInternal).z === -1 || !types.every((t) => (t as unknown as PestTypeInternal).z === (types[0] as unknown as PestTypeInternal).z)
+            ? -1
+            : 1 + (types[0] as unknown as PestTypeInternal).z,
         n: 0,
         e: null,
         w: (data) =>
@@ -223,7 +226,7 @@ export function literal<const T>(value: T): PestType<T> {
         u: 0,
         f: [],
         // occupies a whole byte because z = 0 is used for dynamic types >:(
-        z: 1,
+        z: 0,
         n: 0,
         e: null,
         w: (data) => +(data === value || (typeof data === 'object' && typeof value === 'object')),

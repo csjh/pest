@@ -31,7 +31,7 @@ export function serialize_array(
 
     // skip over dynamic offset table
     const start_of_offsets = ptr;
-    if (!ty.z) {
+    if (ty.z < 0) {
         ptr += reserve(ptr, 4 * data.length, writers);
     }
 
@@ -49,7 +49,7 @@ export function serialize_array(
     const start_of_data = ptr;
     const deserializer = get_serializer(ty);
     for (let i = 0; i < data.length; i++) {
-        if (!ty.z) {
+        if (ty.z < 0) {
             writers.d.setUint32(
                 start_of_offsets + 4 * i,
                 ptr - start_of_data,
@@ -60,7 +60,7 @@ export function serialize_array(
             ptr = deserializer(writers, ptr, data[i]);
         } else {
             writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
-            ptr += ty.z;
+            if (ty.z > 0) ptr += ty.z;
         }
     }
     return ptr;
@@ -115,20 +115,21 @@ function get_serializer(ty: PestTypeInternal): Serializer {
 
         // prettier-ignore
         fn += `${
-            type.z ? "" : dynamics
-                ? `w.d.setUint32(s+${(dynamics - 1) * 4},p-f,!0);`
-                : `f=p;`
+            type.z < 0
+                ? dynamics
+                    ? `w.d.setUint32(s+${(dynamics - 1) * 4},p-f,!0);`
+                    : `f=p;`
+                : ""
         }${
             type.n
-            ? `a[${JSON.stringify(name)}]==null?(p+=${type.z},w.u[s+${ty.y + (nulls >>> 3)}]|=${1 << (nulls & 7)}):` : ""
+            ? `a[${JSON.stringify(name)}]==null?(${type.z > 0? `p+=${type.z},` : ''}w.u[s+${ty.y + (nulls >>> 3)}]|=${1 << (nulls & 7)}):` : ""
             }p=_${i}(w,p,a[${JSON.stringify(name)}]);`;
 
         // TODO: experiment more with inlining
         prelude += `,_${i}=t[${i++}][1].s`;
 
-        pos += type.z;
-        // @ts-expect-error cry
-        dynamics += !type.z;
+        if (type.z > 0) pos += type.z;
+        if (type.z < 0) dynamics++;
         nulls += type.n;
     }
 

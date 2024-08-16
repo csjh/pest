@@ -41,7 +41,7 @@ for (const p of Object.getOwnPropertyNames(Reflect)) {
 function index(ctx: ProxyArray, i: number) {
     if (
         ctx[1].n &&
-        ctx[2].getUint8(ctx[3] + (ctx[1].z ? 0 : ctx[0] * 4) + (i >>> 3)) &
+        ctx[2].getUint8(ctx[3] + (ctx[1].z < 0 ? ctx[0] * 4 : 0) + (i >>> 3)) &
             (1 << (i & 7))
     )
         return null;
@@ -49,9 +49,9 @@ function index(ctx: ProxyArray, i: number) {
     return ctx[1].d(
         ctx[3] +
             (ctx[1].n ? (ctx[0] + 7) >>> 3 : 0) +
-            (ctx[1].z
-                ? i * ctx[1].z
-                : ctx[0] * 4 + ctx[2].getUint32(ctx[3] + i * 4, true)),
+            (ctx[1].z < 0
+                ? ctx[0] * 4 + ctx[2].getUint32(ctx[3] + i * 4, true)
+                : i * ctx[1].z),
         ctx[2]
     );
 }
@@ -103,7 +103,7 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
                           })?null:`
                         : ""
                 }d(this.$+${pos}${
-                    !ty.z && dynamics
+                    ty.z < 0 && dynamics
                         ? `+this._.getUint32(this.$+${(dynamics - 1) * 4},!0)`
                         : ""
                 },this._)}`
@@ -111,9 +111,8 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
             enumerable: true
         };
 
-        pos += field.z;
-        // @ts-expect-error complain to brendan eich
-        dynamics += !field.z;
+        if (field.z > 0) pos += field.z;
+        if (field.z < 0) dynamics++;
         nulls += field.n;
     }
 

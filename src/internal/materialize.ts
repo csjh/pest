@@ -20,16 +20,16 @@ export function materialize_array(
     for (let i = 0; i < len; i++) {
         if (
             ty.n &&
-            dv.getUint8(ptr + (ty.z ? 0 : len * 4) + (i >>> 3)) & (1 << (i & 7))
+            dv.getUint8(ptr + (ty.z < 0 ? len * 4 : 0) + (i >>> 3)) & (1 << (i & 7))
         ) {
             arr[i] = null;
         } else {
             arr[i] = ty.m(
                 ptr +
                     (ty.n ? (len + 7) >>> 3 : 0) +
-                    (ty.z
-                        ? i * ty.z
-                        : len * 4 + dv.getUint32(ptr + i * 4, true)),
+                    (ty.z < 0
+                        ? len * 4 + dv.getUint32(ptr + i * 4, true)
+                        : i * ty.z),
                 dv
             );
         }
@@ -72,9 +72,8 @@ function get_materialized(ty: PestTypeInternal): Materializer {
         },d),`;
         prelude += `,_${i}=f[${i++}][1].m`;
 
-        pos += field.z;
-        // @ts-expect-error cry
-        dynamics += !field.z;
+        if (field.z > 0) pos += field.z;
+        if (field.z < 0) dynamics++;
         nulls += field.n;
     }
     fn += `}`;
