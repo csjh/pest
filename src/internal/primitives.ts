@@ -104,10 +104,11 @@ export function struct<T>(fields: {
         n: 0,
         e: null,
         w: (data) => {
-            if (typeof data !== 'object' || !data) return 0;
+            if (typeof data !== "object" || !data) return 0;
             // if all fields are nullable then any object is a match albeit a shitty one
             if (nulls === entries.length) return 0.01;
-            let data_fields = 0, score = 0;
+            let data_fields = 0,
+                score = 0;
             for (const [k, v] of entries) {
                 const w = v.w(data[k]);
                 if (!w) return 0;
@@ -119,7 +120,7 @@ export function struct<T>(fields: {
             }
             for (let _ in data) data_fields++;
             // if a struct has more fields than the data then it could be a better match for a different struct but still a match
-            return data_fields? score / data_fields : 1;
+            return data_fields ? score / data_fields : 1;
         },
         s: nofunc,
         d: nofunc,
@@ -150,7 +151,7 @@ export function array<E, D extends number = 1>(
         z: 0,
         n: 0,
         e: el,
-        w: (data) => data.length? el.w(data[0]) : 1,
+        w: (data) => (data.length ? el.w(data[0]) : 1),
         s: (writers, ptr, data) => serialize_array(el, writers, ptr, data),
         // the same as the above isn't done because i don't want ./deserialize.ts to be shipped unless explicitly imported
         d: nofunc,
@@ -163,7 +164,8 @@ export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
         ...(t as unknown as PestTypeInternal),
         i: ~(t as unknown as PestTypeInternal).i,
         n: 1,
-        w: (data) => +(data == null) || (t as unknown as PestTypeInternal).w(data),
+        w: (data) =>
+            +(data == null) || (t as unknown as PestTypeInternal).w(data)
     } satisfies PestTypeInternal as unknown as ReturnType<typeof nullable<T>>;
 }
 
@@ -192,14 +194,15 @@ export function enum_<const T extends string[]>(
     } satisfies PestTypeInternal as unknown as ReturnType<typeof enum_<T>>;
 }
 
-type UnionType<T extends PestType<unknown>[]> = 
-    T extends [PestType<infer U>]
+type UnionType<T extends PestType<unknown>[]> = T extends [PestType<infer U>]
     ? U
     : T extends [PestType<infer U>, ...infer R extends PestType<unknown>[]]
     ? U | UnionType<R>
     : never;
 
-export function union<const T extends PestType<unknown>[]>(...types: T): PestType<UnionType<T>> {
+export function union<const T extends PestType<unknown>[]>(
+    ...types: T
+): PestType<UnionType<T>> {
     let hash = 0;
     for (const t of types) {
         hash = (Math.imul(hash, 31) + (t as unknown as PestTypeInternal).i) | 0;
@@ -212,7 +215,12 @@ export function union<const T extends PestType<unknown>[]>(...types: T): PestTyp
         z: 0,
         n: 0,
         e: null,
-        w: (data) => Math.max(...(types as unknown[] as PestTypeInternal[]).map((t) => t.w(data))),
+        w: (data) =>
+            Math.max(
+                ...(types as unknown[] as PestTypeInternal[]).map((t) =>
+                    t.w(data)
+                )
+            ),
         s: nofunc,
         d: nofunc,
         m: nofunc
