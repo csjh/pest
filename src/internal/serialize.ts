@@ -9,9 +9,8 @@ import type {
 
 export function reserve(ptr: number, size: number, writers: BufferWriters) {
     while (ptr + size >= writers.u.length) {
-        const len = writers.u.length;
         // @ts-expect-error
-        const buffer = writers.u.buffer.transfer(len * 2);
+        const buffer = writers.u.buffer.transfer(writers.u.length * 2);
         writers.d = new DataView(buffer);
         writers.u = new Uint8Array(buffer);
     }
@@ -24,27 +23,25 @@ export function serialize_array(
     ptr: number,
     data: any[]
 ) {
-    // set length
-    reserve(ptr, 4, writers);
+    // reserve space for length, dynamic offset, possibly static data, and null table
+    reserve(ptr, 4 + (1 + (ty.z || 4)) * data.length, writers);
+
     writers.d.setUint32(ptr, data.length, true);
     ptr += 4;
 
     // skip over dynamic offset table
     const start_of_offsets = ptr;
     if (ty.z < 0) {
-        ptr += reserve(ptr, 4 * data.length, writers);
+        ptr += 4 * data.length;
     }
 
     // skip over null table otherwise align if TypedArray is available
     const start_of_nulls = ptr;
     if (ty.n) {
-        ptr += reserve(ptr, (data.length + 7) >>> 3, writers);
+        ptr += (data.length + 7) >>> 3;
     } else if (0 <= ty.i && ty.i < 10) {
         ptr += -ptr & (ty.z - 1);
     }
-
-    // reserve space for data (only actually matters for static types)
-    reserve(ptr, ty.z * data.length, writers);
 
     const start_of_data = ptr;
     const deserializer = get_serializer(ty);
