@@ -40,29 +40,27 @@ type Prettify<T> = {
     [K in keyof T]: T[K];
 } & {};
 
-export type AcceptBroad<T> = T extends Date
-    ? T
-    : T extends null
-    ? AcceptBroad<Exclude<T, null>> | null | undefined
-    : T extends ArrayLike<number>
-    ? ArrayLike<number>
-    : T extends ArrayLike<bigint>
-    ? ArrayLike<bigint>
-    : T extends (infer U)[]
-    ? AcceptBroad<U>[]
-    : T extends Record<any, any>
-    ? Prettify<
-          {
-              [K in keyof T as null extends T[K] ? K : never]?: AcceptBroad<
-                  T[K]
-              >;
-          } & {
-              [K in keyof T as null extends T[K] ? never : K]: AcceptBroad<
-                  T[K]
-              >;
-          }
-      >
-    : T;
+export type AcceptBroad<T> =
+    | T
+    | (T extends Date
+          ? never
+          : T extends null
+          ? AcceptBroad<NonNullable<T>> | null | undefined
+          : T extends ArrayLike<infer U>
+          ? ArrayLike<AcceptBroad<U>>
+          : T extends Record<any, any>
+          ? Prettify<
+                {
+                    [K in keyof T as null extends T[K]
+                        ? K
+                        : never]?: AcceptBroad<T[K]>;
+                } & {
+                    [K in keyof T as null extends T[K]
+                        ? never
+                        : K]: AcceptBroad<T[K]>;
+                }
+            >
+          : never);
 
 declare const type: unique symbol;
 export interface PestType<T> {

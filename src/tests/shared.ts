@@ -85,8 +85,8 @@ export const Union = union(i32, string, boolean, Coordinate);
 export const NullableUnionArray = array(nullable(Union));
 
 export function mirror<T>(
-    data: T,
-    schema: PestType<unknown>,
+    data: Parameters<typeof serialize<T>>[0],
+    schema: Parameters<typeof serialize<T>>[1],
     f: typeof materialize
 ): T {
     const serialized = serialize(data, schema);
