@@ -1,5 +1,4 @@
 import { TypedArrays } from "./index.js";
-import { nofunc } from "./index.js";
 import type { Materializer, PestType, PestTypeInternal } from "./types.js";
 
 export function materialize_array(
@@ -20,11 +19,12 @@ export function materialize_array(
     for (let i = 0; i < len; i++) {
         if (
             ty.n &&
-            dv.getUint8(ptr + (ty.z < 0 ? len * 4 : 0) + (i >>> 3)) & (1 << (i & 7))
+            dv.getUint8(ptr + (ty.z < 0 ? len * 4 : 0) + (i >>> 3)) &
+                (1 << (i & 7))
         ) {
             arr[i] = null;
         } else {
-            arr[i] = ty.m(
+            arr[i] = ty.m!(
                 ptr +
                     (ty.n ? (len + 7) >>> 3 : 0) +
                     (ty.z < 0
@@ -38,11 +38,11 @@ export function materialize_array(
 }
 
 function get_materialized(ty: PestTypeInternal): Materializer {
-    if (ty.m !== nofunc) return ty.m;
+    if (ty.m !== null) return ty.m;
     if (ty.y === 1) {
         (ty.f as PestTypeInternal[]).forEach(get_materialized);
         return (ty.m = (ptr, dv) =>
-            (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].m(ptr + 1, dv));
+            (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].m!(ptr + 1, dv));
     }
 
     // values start after the offset table

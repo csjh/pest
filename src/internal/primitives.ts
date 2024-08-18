@@ -1,4 +1,3 @@
-import { nofunc } from "./index.js";
 import { materialize_array } from "./materialize.js";
 import { reserve, serialize_array } from "./serialize.js";
 import {
@@ -123,9 +122,9 @@ export function struct<T>(fields: {
             // if a struct has more fields than the data then it could be a better match for a different struct but still a match
             return data_fields ? score / data_fields : 1;
         },
-        s: nofunc,
-        d: nofunc,
-        m: nofunc
+        s: null,
+        d: null,
+        m: null
     } satisfies PestTypeInternal as unknown as ReturnType<typeof struct<T>>;
 }
 
@@ -155,7 +154,7 @@ export function array<E, D extends number = 1>(
         w: (data) => (data.length ? el.w(data[0]) : 1),
         s: (writers, ptr, data) => serialize_array(el, writers, ptr, data),
         // the same as the above isn't done because i don't want ./deserialize.ts to be shipped unless explicitly imported
-        d: nofunc,
+        d: null,
         m: (ptr, dv) => materialize_array(ptr, dv, el)
     } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;
 }
@@ -209,9 +208,9 @@ export function union<const T extends PestType<unknown>[]>(
                     t.w(data)
                 )
             ),
-        s: nofunc,
-        d: nofunc,
-        m: nofunc
+        s: null,
+        d: null,
+        m: null
     } satisfies PestTypeInternal as unknown as ReturnType<typeof union<T>>;
 }
 

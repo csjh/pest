@@ -1,4 +1,3 @@
-import { nofunc } from "./index.js";
 import type {
     AcceptBroad,
     BufferWriters,
@@ -64,7 +63,7 @@ export function serialize_array(
 }
 
 function get_serializer(ty: PestTypeInternal): Serializer {
-    if (ty.s !== nofunc) return ty.s;
+    if (ty.s !== null) return ty.s;
     if (ty.y === 1) {
         (ty.f as PestTypeInternal[]).forEach(get_serializer);
         return (ty.s = (writers, ptr, data) => {
@@ -78,7 +77,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
                 }
             }
             writers.u[ptr] = high_idx;
-            return (ty.f[high_idx] as PestTypeInternal).s(
+            return (ty.f[high_idx] as PestTypeInternal).s!(
                 writers,
                 ptr + 1,
                 data

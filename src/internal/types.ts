@@ -29,11 +29,11 @@ export interface PestTypeInternal {
     /** how much data fits this type */
     w: (data: any) => number;
     /** cached serializer */
-    s: Serializer;
+    s: Serializer | null;
     /** cached deserializer */
-    d: Deserializer;
+    d: Deserializer | null;
     /** cached materializer */
-    m: Materializer;
+    m: Materializer | null;
 }
 
 type Prettify<T> = {

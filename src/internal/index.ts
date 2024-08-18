@@ -8,10 +8,8 @@ export const TypedArrays = [
     Uint32Array,
     BigUint64Array,
     Float32Array,
-    Float64Array,
+    Float64Array
 ];
-
-export const nofunc = function (): any {};
 
 export { serialize } from "./serialize.js";
 export { deserialize } from "./deserialize.js";

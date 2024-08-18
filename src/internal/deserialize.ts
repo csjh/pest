@@ -1,5 +1,4 @@
 import { TypedArrays } from "./index.js";
-import { nofunc } from "./index.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
 interface Instance {
@@ -46,7 +45,7 @@ function index(ctx: ProxyArray, i: number) {
     )
         return null;
 
-    return ctx[1].d(
+    return ctx[1].d!(
         ctx[3] +
             (ctx[1].n ? (ctx[0] + 7) >>> 3 : 0) +
             (ctx[1].z < 0
@@ -73,11 +72,11 @@ const base = {
     _: { value: null, writable: true }
 };
 function get_deserializer(ty: PestTypeInternal): Deserializer {
-    if (ty.d !== nofunc) return ty.d;
+    if (ty.d !== null) return ty.d;
     if (ty.y === 1) {
         (ty.f as PestTypeInternal[]).forEach(get_deserializer);
         return (ty.d = (ptr, dv) =>
-            (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].d(ptr + 1, dv));
+            (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].d!(ptr + 1, dv));
     }
     if (ty.e) {
         get_deserializer(ty.e);
