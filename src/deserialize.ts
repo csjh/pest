@@ -1,4 +1,4 @@
-import { TypedArrays } from "./index.js";
+import { TypedArrays } from "./shared.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
 interface Instance {

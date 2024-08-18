@@ -14,26 +14,10 @@
         ".": {
             "import": "./build/index.js",
             "require": "./build/index.js"
-        },
-        "./internal": {
-            "import": "./build/internal/index.js",
-            "require": "./build/internal/index.js"
-        },
-        "./vite": {
-            "import": "./build/plugins/vite.js",
-            "require": "./build/plugins/vite.js"
         }
     },
-    "dependencies": {
-        "typescript": "^5.5.4"
-    },
     "devDependencies": {
-        "@types/node": "^20.14.12",
-        "acorn": "^8.12.1",
-        "bun-types": "^1.1.21",
-        "esrap": "^1.2.2"
-    },
-    "peerDependencies": {
-        "vite": "^5.3.5"
+        "typescript": "^5.5.4",
+        "bun-types": "^1.1.21"
     }
 }

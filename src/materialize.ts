@@ -1,4 +1,4 @@
-import { TypedArrays } from "./index.js";
+import { TypedArrays } from "./shared.js";
 import type { Materializer, PestType, PestTypeInternal } from "./types.js";
 
 export function materialize_array(
