@@ -24,15 +24,6 @@ import {
     mirror
 } from "./shared.js";
 
-declare function test(d: {
-    x: number | null;
-    y: number | null;
-});
-
-const coord = { x: 1, y: null };
-
-test(coord);
-
 describe("definitions", async () => {
     it("should stay intact with static structs", async () => {
         const coord = { x: 1, y: 2 };
