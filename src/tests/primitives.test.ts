@@ -18,9 +18,9 @@ import {
     regexp,
     serialize,
     deserialize,
-    materialize,
-    PestType
-} from "../internal/index.js";
+    materialize
+} from "../index.js";
+import type { PestType } from "../types.js";
 
 function test_primitive<T>(data: NoInfer<T>, schema: PestType<T>) {
     const serialized = serialize(data as any, schema);

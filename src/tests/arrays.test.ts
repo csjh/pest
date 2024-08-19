@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from "bun:test";
 import { array } from "../index.js";
-import { serialize, deserialize, materialize } from "../internal/index.js";
+import { serialize, deserialize, materialize } from "../index.js";
 import {
     Locations,
     NullableCoordArray,

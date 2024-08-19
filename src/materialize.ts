@@ -1,4 +1,4 @@
-import { TypedArrays } from "./shared.js";
+import { internalize, TypedArrays } from "./shared.js";
 import type { Materializer, PestType, PestTypeInternal } from "./types.js";
 
 export function materialize_array(
@@ -86,17 +86,16 @@ export function materialize<T>(
     msg: Uint8Array | ArrayBuffer,
     schema: PestType<T>
 ): T {
-    const internal = schema as unknown as PestTypeInternal;
+    /* @__PURE__ */ internalize(schema);
+
     // @ts-expect-error
     const buffer = (msg.buffer ?? msg) as ArrayBuffer;
     const dv = new DataView(buffer);
 
     const type_id = dv.getInt32(0, true);
-    if (type_id !== internal.i) {
-        throw new Error(
-            `Type mismatch: expected ${internal.i}, got ${type_id}`
-        );
+    if (type_id !== schema.i) {
+        throw new Error(`Type mismatch: expected ${schema.i}, got ${type_id}`);
     }
     // 4 = skip over type id and depth
-    return get_materialized(internal)(4, dv) as T;
+    return get_materialized(schema)(4, dv) as T;
 }

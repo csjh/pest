@@ -7,12 +7,12 @@ import {
     i32,
     materialize,
     nullable,
-    PestType,
     serialize,
     string,
     struct,
     union
-} from "../internal/index.js";
+} from "../index.js";
+import type { PestType } from "../types.js";
 
 export const Coordinate = struct({
     x: f32,
@@ -85,8 +85,8 @@ export const Union = union(i32, string, boolean, Coordinate);
 export const NullableUnionArray = array(nullable(Union));
 
 export function mirror<T>(
-    data: Parameters<typeof serialize<T>>[0],
-    schema: Parameters<typeof serialize<T>>[1],
+    data: NoInfer<T>,
+    schema: PestType<T>,
     f: typeof materialize
 ): T {
     const serialized = serialize(data, schema);

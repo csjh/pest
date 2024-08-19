@@ -7,8 +7,11 @@ import {
     PestTypeInternal,
     Serializer
 } from "./types.js";
+import {
+    internalize,
+    internalize_array
+} from "./shared.js";
 
-/* @__PURE__ */
 function primitive(
     i: number,
     size: number,
@@ -100,7 +103,7 @@ export function struct<T>(fields: {
         y: dynamics && (dynamics - 1) * 4,
         u: (nulls + 7) >>> 3,
         f: entries.sort((a, b) => b[1].z - a[1].z),
-        z: dynamics? -1 : size,
+        z: dynamics ? -1 : size,
         n: 0,
         e: null,
         w: (data) => {
@@ -142,9 +145,11 @@ export function array<E, D extends number = 1>(
     // @ts-expect-error
     depth |= 0;
     if (!depth) return e as unknown as ReturnType<typeof array<E, D>>;
-    const el = array(e, depth - 1) as unknown as PestTypeInternal;
+    const el = array(e, depth - 1);
+    /* @__PURE__ */ internalize(el);
+    /* @__PURE__ */ internalize(e);
     return {
-        i: ((e as unknown as PestTypeInternal).i + depth) | 0,
+        i: (e.i + depth) | 0,
         y: 0,
         u: 0,
         f: [],
@@ -159,13 +164,13 @@ export function array<E, D extends number = 1>(
     } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;
 }
 
-export function nullable<T>(t: PestType<T>): PestType<T | undefined> {
+export function nullable<T>(t: PestType<T>): PestType<T | null> {
+    /* @__PURE__ */ internalize(t);
     return {
-        ...(t as unknown as PestTypeInternal),
-        i: ~(t as unknown as PestTypeInternal).i,
+        ...t,
+        i: ~t.i,
         n: 1,
-        w: (data) =>
-            +(data == null) || (t as unknown as PestTypeInternal).w(data)
+        w: (data) => +(data == null) || t.w(data)
     } satisfies PestTypeInternal as unknown as ReturnType<typeof nullable<T>>;
 }
 
@@ -185,29 +190,28 @@ type UnionType<T extends PestType<unknown>[]> = T extends [PestType<infer U>]
 export function union<const T extends PestType<unknown>[]>(
     ...types: T
 ): PestType<UnionType<T>> {
+    /* @__PURE__ */ internalize_array(types);
+
     let hash = 0;
     for (const t of types) {
-        hash = (Math.imul(hash, 31) + (t as unknown as PestTypeInternal).i) | 0;
+        hash = (Math.imul(hash, 31) + t.i) | 0;
     }
     return {
         i: hash,
         y: 1,
         u: 0,
-        f: types as unknown[] as PestTypeInternal[],
+        f: types,
         // if types are a uniform size then the union is also that size
         // mostly just here so that enums are a single byte
         // but should just occasionally help in general i guess
-        z: (types[0] as unknown as PestTypeInternal).z === -1 || !types.every((t) => (t as unknown as PestTypeInternal).z === (types[0] as unknown as PestTypeInternal).z)
-            ? -1
-            : 1 + (types[0] as unknown as PestTypeInternal).z,
+        z:
+            types[0].z === -1 ||
+            !types.every((t: PestTypeInternal) => t.z === types[0].z)
+                ? -1
+                : 1 + types[0].z,
         n: 0,
         e: null,
-        w: (data) =>
-            Math.max(
-                ...(types as unknown[] as PestTypeInternal[]).map((t) =>
-                    t.w(data)
-                )
-            ),
+        w: (data) => Math.max(...types.map((t: PestTypeInternal) => t.w(data))),
         s: null,
         d: null,
         m: null
@@ -228,7 +232,11 @@ export function literal<const T>(value: T): PestType<T> {
         z: 0,
         n: 0,
         e: null,
-        w: (data) => +(data === value || (typeof data === 'object' && typeof value === 'object')),
+        w: (data) =>
+            +(
+                data === value ||
+                (typeof data === "object" && typeof value === "object")
+            ),
         s: (_, ptr) => ptr,
         d: () => value,
         m: () => value

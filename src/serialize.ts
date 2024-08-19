@@ -1,3 +1,4 @@
+import { internalize } from "./shared.js";
 import type {
     AcceptBroad,
     BufferWriters,
@@ -138,7 +139,7 @@ export function serialize<T>(
     data: NoInfer<AcceptBroad<T>>,
     schema: PestType<T>
 ): Uint8Array {
-    const _schema = schema as unknown as PestTypeInternal;
+    /* @__PURE__ */ internalize(schema);
 
     const buffer = new ArrayBuffer(1024);
     const writers = {
@@ -146,7 +147,7 @@ export function serialize<T>(
         u: new Uint8Array(buffer)
     };
 
-    writers.d.setInt32(0, _schema.i, true);
-    const ptr = get_serializer(_schema)(writers, 4, data);
+    writers.d.setInt32(0, schema.i, true);
+    const ptr = get_serializer(schema)(writers, 4, data);
     return writers.u.subarray(0, ptr);
 }

@@ -1,4 +1,4 @@
-import { TypedArrays } from "./shared.js";
+import { internalize, TypedArrays } from "./shared.js";
 import { Deserializer, PestType, PestTypeInternal } from "./types.js";
 
 interface Instance {
@@ -131,19 +131,18 @@ export function deserialize<T>(
     msg: Uint8Array | ArrayBuffer,
     schema: PestType<T>
 ): T {
-    const internal = schema as unknown as PestTypeInternal;
+    /* @__PURE__ */ internalize(schema);
+
     // @ts-expect-error cry
     const buffer = (msg.buffer ?? msg) as ArrayBuffer;
     const dv = new DataView(buffer);
 
     const type_id = dv.getInt32(0, true);
-    if (type_id !== internal.i) {
-        throw new Error(
-            `Type mismatch: expected ${internal.i}, got ${type_id}`
-        );
+    if (type_id !== schema.i) {
+        throw new Error(`Type mismatch: expected ${schema.i}, got ${type_id}`);
     }
     // 4 = skip over type hash
-    return get_deserializer(internal)(4, dv) as T;
+    return get_deserializer(schema)(4, dv) as T;
 }
 
 /*
