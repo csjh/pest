@@ -44,7 +44,7 @@ export function serialize_array(
     }
 
     const start_of_data = ptr;
-    const deserializer = get_serializer(ty);
+    const serializer = get_serializer(ty);
     for (let i = 0; i < data.length; i++) {
         if (ty.z < 0) {
             writers.d.setUint32(
@@ -54,7 +54,7 @@ export function serialize_array(
             );
         }
         if (data[i] != null) {
-            ptr = deserializer(writers, ptr, data[i]);
+            ptr = serializer(writers, ptr, data[i]);
         } else {
             writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
             if (ty.z > 0) ptr += ty.z;
