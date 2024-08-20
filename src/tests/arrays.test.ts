@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from "bun:test";
 import { array } from "../index.js";
-import { serialize, view, materialize } from "../index.js";
+import { serialize, view, deserialize } from "../index.js";
 import {
     Locations,
     NullableCoordArray,
@@ -25,7 +25,7 @@ describe("unnested arrays", async () => {
             { x: 1, y: 2 }
         ];
         expect(coord).toEqual(mirror(coord, array(Coordinate), view));
-        expect(coord).toEqual(mirror(coord, array(Coordinate), materialize));
+        expect(coord).toEqual(mirror(coord, array(Coordinate), deserialize));
 
         const locations = [
             {
@@ -39,7 +39,7 @@ describe("unnested arrays", async () => {
         ];
         expect(locations).toEqual(mirror(locations, array(Locations), view));
         expect(locations).toEqual(
-            mirror(locations, array(Locations), materialize)
+            mirror(locations, array(Locations), deserialize)
         );
     });
 
@@ -126,7 +126,7 @@ describe("unnested arrays", async () => {
         ];
 
         expect(map).toEqual(mirror(map, array(Map), view));
-        expect(map).toEqual(mirror(map, array(Map), materialize));
+        expect(map).toEqual(mirror(map, array(Map), deserialize));
     });
 
     it("should work as an array", async () => {
@@ -145,7 +145,7 @@ describe("unnested arrays", async () => {
     it("should stay intact with static struct arrays", async () => {
         const coord = [null, { x: 1, y: 2 }];
         expect(coord).toEqual(mirror(coord, NullableCoordArray, view));
-        expect(coord).toEqual(mirror(coord, NullableCoordArray, materialize));
+        expect(coord).toEqual(mirror(coord, NullableCoordArray, deserialize));
 
         const locations = [
             {
@@ -158,7 +158,7 @@ describe("unnested arrays", async () => {
             mirror(locations, NullableLocationArray, view)
         );
         expect(locations).toEqual(
-            mirror(locations, NullableLocationArray, materialize)
+            mirror(locations, NullableLocationArray, deserialize)
         );
     });
 
@@ -207,7 +207,7 @@ describe("unnested arrays", async () => {
         ];
 
         expect(map).toEqual(mirror(map, NullableMapArray, view));
-        expect(map).toEqual(mirror(map, NullableMapArray, materialize));
+        expect(map).toEqual(mirror(map, NullableMapArray, deserialize));
     });
 });
 
@@ -224,7 +224,7 @@ describe("nested arrays", async () => {
             ]
         ];
         expect(coord).toEqual(mirror(coord, array(Coordinate, 2), view));
-        expect(coord).toEqual(mirror(coord, array(Coordinate, 2), materialize));
+        expect(coord).toEqual(mirror(coord, array(Coordinate, 2), deserialize));
 
         const locations = [
             [
@@ -250,7 +250,7 @@ describe("nested arrays", async () => {
         ];
         expect(locations).toEqual(mirror(locations, array(Locations, 2), view));
         expect(locations).toEqual(
-            mirror(locations, array(Locations, 2), materialize)
+            mirror(locations, array(Locations, 2), deserialize)
         );
     });
 
@@ -488,7 +488,7 @@ describe("nested arrays", async () => {
         ];
 
         expect(map).toEqual(mirror(map, array(Map, 2), view));
-        expect(map).toEqual(mirror(map, array(Map, 2), materialize));
+        expect(map).toEqual(mirror(map, array(Map, 2), deserialize));
     });
 
     it("should work as an array", async () => {
@@ -526,7 +526,7 @@ describe("nested arrays", async () => {
         ];
         expect(coord).toEqual(mirror(coord, NullableCoordArrayArray, view));
         expect(coord).toEqual(
-            mirror(coord, NullableCoordArrayArray, materialize)
+            mirror(coord, NullableCoordArrayArray, deserialize)
         );
 
         const locations = [
@@ -553,7 +553,7 @@ describe("nested arrays", async () => {
         ];
         expect(locations).toEqual(mirror(locations, NullableLocations, view));
         expect(locations).toEqual(
-            mirror(locations, NullableLocations, materialize)
+            mirror(locations, NullableLocations, deserialize)
         );
     });
 
@@ -700,7 +700,7 @@ describe("nested arrays", async () => {
         ];
 
         expect(map).toEqual(mirror(map, NullableMapArrayArray, view));
-        expect(map).toEqual(mirror(map, NullableMapArrayArray, materialize));
+        expect(map).toEqual(mirror(map, NullableMapArrayArray, deserialize));
     });
 });
 
@@ -711,7 +711,7 @@ describe("unnested typed arrays", async () => {
             times: new Float64Array([1.0])
         };
         expect(races).toEqual(mirror(races, HorseRace, view));
-        expect(races).toEqual(mirror(races, HorseRace, materialize));
+        expect(races).toEqual(mirror(races, HorseRace, deserialize));
 
         const races2 = [
             {
@@ -724,7 +724,7 @@ describe("unnested typed arrays", async () => {
             }
         ];
         expect(races2).toEqual(mirror(races2, array(HorseRace), view));
-        expect(races2).toEqual(mirror(races2, array(HorseRace), materialize));
+        expect(races2).toEqual(mirror(races2, array(HorseRace), deserialize));
     });
 
     it("should work as a typedarray", async () => {
@@ -754,7 +754,7 @@ describe("unnested typed arrays", async () => {
         };
         expect(races).toEqual(mirror(races, HorseRaceSomeHorsesDied, view));
         expect(races).toEqual(
-            mirror(races, HorseRaceSomeHorsesDied, materialize)
+            mirror(races, HorseRaceSomeHorsesDied, deserialize)
         );
 
         const races2 = [
@@ -771,7 +771,7 @@ describe("unnested typed arrays", async () => {
             mirror(races2, array(HorseRaceSomeHorsesDied), view)
         );
         expect(races2).toEqual(
-            mirror(races2, array(HorseRaceSomeHorsesDied), materialize)
+            mirror(races2, array(HorseRaceSomeHorsesDied), deserialize)
         );
     });
 });

@@ -5,7 +5,7 @@ import {
     f32,
     f64,
     i32,
-    materialize,
+    deserialize,
     nullable,
     serialize,
     string,
@@ -87,7 +87,7 @@ export const NullableUnionArray = array(nullable(Union));
 export function mirror<T>(
     data: NoInfer<T>,
     schema: PestType<T>,
-    f: typeof materialize
+    f: typeof deserialize
 ): T {
     const serialized = serialize(data, schema);
     return f(serialized, schema) as T;

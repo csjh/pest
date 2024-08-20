@@ -18,7 +18,7 @@ import {
     regexp,
     serialize,
     view,
-    materialize
+    deserialize
 } from "../index.js";
 import type { PestType } from "../types.js";
 
@@ -26,7 +26,7 @@ function test_primitive<T>(data: NoInfer<T>, schema: PestType<T>) {
     const serialized = serialize(data as any, schema);
     const materialized = view(serialized, schema);
     expect(materialized).toEqual(data);
-    expect(materialize(serialized, schema)).toEqual(data);
+    expect(deserialize(serialized, schema)).toEqual(data);
 }
 
 describe("primitives", () => {

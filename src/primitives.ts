@@ -1,4 +1,4 @@
-import { materialize_array } from "./materialize.js";
+import { deserialize_array } from "./deserialize.js";
 import { reserve, serialize_array } from "./serialize.js";
 import {
     BufferWriters,
@@ -157,7 +157,7 @@ export function array<E, D extends number = 1>(
         s: (writers, ptr, data) => serialize_array(el, writers, ptr, data),
         // the same as the above isn't done because i don't want ./view.ts to be shipped unless explicitly imported
         d: null,
-        m: (ptr, dv) => materialize_array(ptr, dv, el)
+        m: (ptr, dv) => deserialize_array(ptr, dv, el)
     } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;
 }
 

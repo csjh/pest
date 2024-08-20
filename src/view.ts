@@ -91,7 +91,7 @@ function get_view(ty: PestTypeInternal): Deserializer {
     const creator: PropertyDescriptorMap = { ...base };
 
     for (const [name, field] of ty.f as [string, PestTypeInternal][]) {
-        // same as in materialize.ts, but lazily
+        // same as in deserialize.ts, but lazily
         creator[name] = {
             get: new Function(
                 "d",

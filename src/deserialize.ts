@@ -1,7 +1,7 @@
 import { internalize, TypedArrays } from "./shared.js";
 import type { Materializer, PestType, PestTypeInternal } from "./types.js";
 
-export function materialize_array(
+export function deserialize_array(
     ptr: number,
     dv: DataView,
     ty: PestTypeInternal
@@ -15,7 +15,7 @@ export function materialize_array(
     }
 
     const arr = Array.from({ length: len });
-    get_materialized(ty); // ensure materializer is cached
+    get_deserializer(ty); // ensure materializer is cached
     for (let i = 0; i < len; i++) {
         if (
             ty.n &&
@@ -37,10 +37,10 @@ export function materialize_array(
     return arr;
 }
 
-function get_materialized(ty: PestTypeInternal): Materializer {
+function get_deserializer(ty: PestTypeInternal): Materializer {
     if (ty.m !== null) return ty.m;
     if (ty.y === 1) {
-        (ty.f as PestTypeInternal[]).forEach(get_materialized);
+        (ty.f as PestTypeInternal[]).forEach(get_deserializer);
         return (ty.m = (ptr, dv) =>
             (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].m!(ptr + 1, dv));
     }
@@ -54,7 +54,7 @@ function get_materialized(ty: PestTypeInternal): Materializer {
     let fn = `{`;
     let i = 0;
     for (const [name, field] of ty.f as [string, PestTypeInternal][]) {
-        get_materialized(field); // ensure materializer is cached
+        get_deserializer(field); // ensure materializer is cached
         /*
         one of four forms:
         if field is nullable and (dv.getUint8(ptr + nulls >>> 3) & (1 << (nulls & 7))) != 0:
@@ -82,7 +82,7 @@ function get_materialized(ty: PestTypeInternal): Materializer {
     return (ty.m = new Function("f", fn)(ty.f));
 }
 
-export function materialize<T>(
+export function deserialize<T>(
     msg: Uint8Array | ArrayBuffer,
     schema: PestType<T>
 ): T {
@@ -97,5 +97,5 @@ export function materialize<T>(
         throw new Error(`Type mismatch: expected ${schema.i}, got ${type_id}`);
     }
     // 4 = skip over type id and depth
-    return get_materialized(schema)(4, dv) as T;
+    return get_deserializer(schema)(4, dv) as T;
 }
