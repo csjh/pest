@@ -24,7 +24,8 @@ export function serialize_array(
     data: any[]
 ) {
     // reserve space for length, dynamic offset, possibly static data, and null table
-    reserve(ptr, 4 + (1 + (ty.z || 4)) * data.length, writers);
+    // 20 instead of 4 because max alignment skip is 16 bytes
+    reserve(ptr, 20 + (1 + (ty.z || 4)) * data.length, writers);
 
     writers.d.setUint32(ptr, data.length, true);
     ptr += 4;
