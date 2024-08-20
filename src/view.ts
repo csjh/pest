@@ -55,7 +55,7 @@ function index(ctx: ProxyArray, i: number) {
     );
 }
 
-function deserialize_array(ptr: number, dv: DataView, ty: PestTypeInternal) {
+function get_array_view(ptr: number, dv: DataView, ty: PestTypeInternal) {
     const len = dv.getUint32(ptr, true);
     ptr += 4;
     if (0 <= ty.i && ty.i < 10 && !ty.n) {
@@ -71,16 +71,16 @@ const base = {
     $: { value: 0, writable: true },
     _: { value: null, writable: true }
 };
-function get_deserializer(ty: PestTypeInternal): Deserializer {
+function get_view(ty: PestTypeInternal): Deserializer {
     if (ty.d !== null) return ty.d;
     if (ty.y === 1) {
-        (ty.f as PestTypeInternal[]).forEach(get_deserializer);
+        (ty.f as PestTypeInternal[]).forEach(get_view);
         return (ty.d = (ptr, dv) =>
             (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].d!(ptr + 1, dv));
     }
     if (ty.e) {
-        get_deserializer(ty.e);
-        return (ty.d = (ptr, dv) => deserialize_array(ptr, dv, ty.e!));
+        get_view(ty.e);
+        return (ty.d = (ptr, dv) => get_array_view(ptr, dv, ty.e!));
     }
 
     // values start after the offset table
@@ -106,7 +106,7 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
                         ? `+this._.getUint32(this.$+${(dynamics - 1) * 4},!0)`
                         : ""
                 },this._)}`
-            )(get_deserializer(field)),
+            )(get_view(field)),
             enumerable: true
         };
 
@@ -127,10 +127,7 @@ function get_deserializer(ty: PestTypeInternal): Deserializer {
     });
 }
 
-export function deserialize<T>(
-    msg: Uint8Array | ArrayBuffer,
-    schema: PestType<T>
-): T {
+export function view<T>(msg: Uint8Array | ArrayBuffer, schema: PestType<T>): T {
     /* @__PURE__ */ internalize(schema);
 
     // @ts-expect-error cry
@@ -142,7 +139,7 @@ export function deserialize<T>(
         throw new Error(`Type mismatch: expected ${schema.i}, got ${type_id}`);
     }
     // 4 = skip over type hash
-    return get_deserializer(schema)(4, dv) as T;
+    return get_view(schema)(4, dv) as T;
 }
 
 /*

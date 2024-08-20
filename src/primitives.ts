@@ -7,10 +7,7 @@ import {
     PestTypeInternal,
     Serializer
 } from "./types.js";
-import {
-    internalize,
-    internalize_array
-} from "./shared.js";
+import { internalize, internalize_array } from "./shared.js";
 
 function primitive(
     i: number,
@@ -158,7 +155,7 @@ export function array<E, D extends number = 1>(
         e: el,
         w: (data) => (data.length ? el.w(data[0]) : 1),
         s: (writers, ptr, data) => serialize_array(el, writers, ptr, data),
-        // the same as the above isn't done because i don't want ./deserialize.ts to be shipped unless explicitly imported
+        // the same as the above isn't done because i don't want ./view.ts to be shipped unless explicitly imported
         d: null,
         m: (ptr, dv) => materialize_array(ptr, dv, el)
     } satisfies PestTypeInternal as unknown as ReturnType<typeof array<E, D>>;

@@ -4,7 +4,7 @@ import { describe, it, expect } from "bun:test";
 import {
     array,
     boolean,
-    deserialize,
+    view,
     enum_,
     f32,
     materialize,
@@ -27,14 +27,14 @@ import {
 describe("definitions", async () => {
     it("should stay intact with static structs", async () => {
         const coord = { x: 1, y: 2 };
-        expect(coord).toEqual(mirror(coord, Coordinate, deserialize));
+        expect(coord).toEqual(mirror(coord, Coordinate, view));
         expect(coord).toEqual(mirror(coord, Coordinate, materialize));
 
         const locations = {
             home: { x: 1, y: 2 },
             work: { x: 3, y: 4 }
         };
-        expect(locations).toEqual(mirror(locations, Locations, deserialize));
+        expect(locations).toEqual(mirror(locations, Locations, view));
         expect(locations).toEqual(mirror(locations, Locations, materialize));
     });
 
@@ -79,7 +79,7 @@ describe("definitions", async () => {
             }
         };
 
-        expect(map).toEqual(mirror(map, Map, deserialize));
+        expect(map).toEqual(mirror(map, Map, view));
         expect(map).toEqual(mirror(map, Map, materialize));
 
         const endpoint = {
@@ -88,13 +88,13 @@ describe("definitions", async () => {
             accessed_at: new Date()
         };
 
-        expect(endpoint).toEqual(mirror(endpoint, Endpoint, deserialize));
+        expect(endpoint).toEqual(mirror(endpoint, Endpoint, view));
         expect(endpoint).toEqual(mirror(endpoint, Endpoint, materialize));
     });
 
     it("should stay intact with static structs", async () => {
         const coord = { x: 1, y: null };
-        expect(coord).toEqual(mirror(coord, NullableCoordinate, deserialize));
+        expect(coord).toEqual(mirror(coord, NullableCoordinate, view));
         expect(coord).toEqual(mirror(coord, NullableCoordinate, materialize));
 
         const locations = {
@@ -102,7 +102,7 @@ describe("definitions", async () => {
             work: null
         };
         expect(locations).toEqual(
-            mirror(locations, LocationsMaybeNoWork, deserialize)
+            mirror(locations, LocationsMaybeNoWork, view)
         );
         expect(locations).toEqual(
             mirror(locations, LocationsMaybeNoWork, materialize)
@@ -126,7 +126,7 @@ describe("definitions", async () => {
             current: null
         };
 
-        expect(map).toEqual(mirror(map, MapSketchyLocations, deserialize));
+        expect(map).toEqual(mirror(map, MapSketchyLocations, view));
         expect(map).toEqual(mirror(map, MapSketchyLocations, materialize));
 
         const map2 = {
@@ -163,7 +163,7 @@ describe("definitions", async () => {
             }
         };
 
-        expect(map2).toEqual(mirror(map2, MapSketchyLocations, deserialize));
+        expect(map2).toEqual(mirror(map2, MapSketchyLocations, view));
         expect(map2).toEqual(mirror(map2, MapSketchyLocations, materialize));
     });
 });
@@ -172,13 +172,13 @@ describe("enums", () => {
     it("should stay intact with enums", () => {
         const Endpoint = enum_("GET", "POST", "PUT");
 
-        expect("GET").toEqual(mirror("GET", Endpoint, deserialize));
+        expect("GET").toEqual(mirror("GET", Endpoint, view));
         expect("GET").toEqual(mirror("GET", Endpoint, materialize));
 
-        expect("POST").toEqual(mirror("POST", Endpoint, deserialize));
+        expect("POST").toEqual(mirror("POST", Endpoint, view));
         expect("POST").toEqual(mirror("POST", Endpoint, materialize));
 
-        expect("PUT").toEqual(mirror("PUT", Endpoint, deserialize));
+        expect("PUT").toEqual(mirror("PUT", Endpoint, view));
         expect("PUT").toEqual(mirror("PUT", Endpoint, materialize));
     });
 
@@ -186,11 +186,11 @@ describe("enums", () => {
         const EndpointArray = array(enum_("GET", "POST", "PUT"));
 
         const arr = ["GET", "POST", "PUT"];
-        expect(arr).toEqual(mirror(arr, EndpointArray, deserialize));
+        expect(arr).toEqual(mirror(arr, EndpointArray, view));
         expect(arr).toEqual(mirror(arr, EndpointArray, materialize));
 
         const arr2 = ["GET", "GET", "GET"];
-        expect(arr2).toEqual(mirror(arr2, EndpointArray, deserialize));
+        expect(arr2).toEqual(mirror(arr2, EndpointArray, view));
         expect(arr2).toEqual(mirror(arr2, EndpointArray, materialize));
     });
 
@@ -209,7 +209,7 @@ describe("enums", () => {
             backup2: "PUT"
         };
 
-        expect(endpoint).toEqual(mirror(endpoint, EndpointStruct, deserialize));
+        expect(endpoint).toEqual(mirror(endpoint, EndpointStruct, view));
         expect(endpoint).toEqual(mirror(endpoint, EndpointStruct, materialize));
     });
 });
@@ -218,13 +218,13 @@ describe("unions", async () => {
     it("should stay intact with unions of primitives", () => {
         const PrimitiveUnion = union(string, f32, boolean);
 
-        expect("GET").toEqual(mirror("GET", PrimitiveUnion, deserialize));
+        expect("GET").toEqual(mirror("GET", PrimitiveUnion, view));
         expect("GET").toEqual(mirror("GET", PrimitiveUnion, materialize));
 
-        expect(1).toEqual(mirror(1, PrimitiveUnion, deserialize));
+        expect(1).toEqual(mirror(1, PrimitiveUnion, view));
         expect(1).toEqual(mirror(1, PrimitiveUnion, materialize));
 
-        expect(true).toEqual(mirror(true, PrimitiveUnion, deserialize));
+        expect(true).toEqual(mirror(true, PrimitiveUnion, view));
         expect(true).toEqual(mirror(true, PrimitiveUnion, materialize));
     });
 
@@ -232,14 +232,14 @@ describe("unions", async () => {
         const StructUnion = union(Coordinate, Locations);
 
         const coord = { x: 1, y: 2 };
-        expect(coord).toEqual(mirror(coord, StructUnion, deserialize));
+        expect(coord).toEqual(mirror(coord, StructUnion, view));
         expect(coord).toEqual(mirror(coord, StructUnion, materialize));
 
         const locations = {
             home: { x: 1, y: 2 },
             work: { x: 3, y: 4 }
         };
-        expect(locations).toEqual(mirror(locations, StructUnion, deserialize));
+        expect(locations).toEqual(mirror(locations, StructUnion, view));
         expect(locations).toEqual(mirror(locations, StructUnion, materialize));
     });
 
@@ -250,16 +250,14 @@ describe("unions", async () => {
         );
 
         const coord = { x: 1, y: null };
-        expect(coord).toEqual(mirror(coord, NullableStructUnion, deserialize));
+        expect(coord).toEqual(mirror(coord, NullableStructUnion, view));
         expect(coord).toEqual(mirror(coord, NullableStructUnion, materialize));
 
         const locations = {
             home: { x: null, y: 23 },
             work: null
         };
-        expect(locations).toEqual(
-            mirror(locations, NullableStructUnion, deserialize)
-        );
+        expect(locations).toEqual(mirror(locations, NullableStructUnion, view));
         expect(locations).toEqual(
             mirror(locations, NullableStructUnion, materialize)
         );
@@ -273,20 +271,18 @@ describe("unions", async () => {
         );
 
         const coord = { x: 1, y: 2 };
-        expect(coord).toEqual(mirror(coord, MixedStructUnion, deserialize));
+        expect(coord).toEqual(mirror(coord, MixedStructUnion, view));
         expect(coord).toEqual(mirror(coord, MixedStructUnion, materialize));
 
         const coord2 = { x: 1, y: null };
-        expect(coord2).toEqual(mirror(coord2, MixedStructUnion, deserialize));
+        expect(coord2).toEqual(mirror(coord2, MixedStructUnion, view));
         expect(coord2).toEqual(mirror(coord2, MixedStructUnion, materialize));
 
         const locations = {
             home: { x: null, y: 23 },
             work: null
         };
-        expect(locations).toEqual(
-            mirror(locations, MixedStructUnion, deserialize)
-        );
+        expect(locations).toEqual(mirror(locations, MixedStructUnion, view));
         expect(locations).toEqual(
             mirror(locations, MixedStructUnion, materialize)
         );
@@ -296,15 +292,15 @@ describe("unions", async () => {
         const ArrayUnion = union(array(f32), array(string), array(boolean));
 
         const arr = new Float32Array([1, 2, 3, 4, 5]);
-        expect(arr).toEqual(mirror(arr, ArrayUnion, deserialize));
+        expect(arr).toEqual(mirror(arr, ArrayUnion, view));
         expect(arr).toEqual(mirror(arr, ArrayUnion, materialize));
 
         const arr2 = ["GET", "POST", "PUT"];
-        expect(arr2).toEqual(mirror(arr2, ArrayUnion, deserialize));
+        expect(arr2).toEqual(mirror(arr2, ArrayUnion, view));
         expect(arr2).toEqual(mirror(arr2, ArrayUnion, materialize));
 
         const arr3 = [true, false, true];
-        expect(arr3).toEqual(mirror(arr3, ArrayUnion, deserialize));
+        expect(arr3).toEqual(mirror(arr3, ArrayUnion, view));
         expect(arr3).toEqual(mirror(arr3, ArrayUnion, materialize));
     });
 
@@ -316,27 +312,27 @@ describe("unions", async () => {
             { x: 3, y: 4 },
             { x: 5, y: 6 }
         ];
-        expect(arr).toEqual(mirror(arr, StructArrayUnion, deserialize));
+        expect(arr).toEqual(mirror(arr, StructArrayUnion, view));
         expect(arr).toEqual(mirror(arr, StructArrayUnion, materialize));
 
         const arr2 = [
             { home: { x: 1, y: 2 }, work: { x: 3, y: 4 } },
             { home: { x: 5, y: 6 }, work: { x: 7, y: 8 } }
         ];
-        expect(arr2).toEqual(mirror(arr2, StructArrayUnion, deserialize));
+        expect(arr2).toEqual(mirror(arr2, StructArrayUnion, view));
         expect(arr2).toEqual(mirror(arr2, StructArrayUnion, materialize));
     });
 
     it("should stay intact with enums", () => {
         const EnumUnion = union(enum_("GET", "POST", "PUT"), f32, boolean);
 
-        expect("GET").toEqual(mirror("GET", EnumUnion, deserialize));
+        expect("GET").toEqual(mirror("GET", EnumUnion, view));
         expect("GET").toEqual(mirror("GET", EnumUnion, materialize));
 
-        expect(1).toEqual(mirror(1, EnumUnion, deserialize));
+        expect(1).toEqual(mirror(1, EnumUnion, view));
         expect(1).toEqual(mirror(1, EnumUnion, materialize));
 
-        expect(true).toEqual(mirror(true, EnumUnion, deserialize));
+        expect(true).toEqual(mirror(true, EnumUnion, view));
         expect(true).toEqual(mirror(true, EnumUnion, materialize));
     });
 
@@ -350,11 +346,11 @@ describe("unions", async () => {
         const Union = union(Coordinate, Coordinate3D);
 
         const coord = { x: 1, y: 2 };
-        expect(coord).toEqual(mirror(coord, Union, deserialize));
+        expect(coord).toEqual(mirror(coord, Union, view));
         expect(coord).toEqual(mirror(coord, Union, materialize));
 
         const coord3d = { x: 1, y: 2, z: 3 };
-        expect(coord3d).toEqual(mirror(coord3d, Union, deserialize));
+        expect(coord3d).toEqual(mirror(coord3d, Union, view));
         expect(coord3d).toEqual(mirror(coord3d, Union, materialize));
 
         const NullableCoordinate3D = struct({
@@ -366,11 +362,11 @@ describe("unions", async () => {
         const Union2 = union(Coordinate, NullableCoordinate3D);
 
         const coord2 = { x: 1, y: 2 };
-        expect(coord2).toEqual(mirror(coord2, Union2, deserialize));
+        expect(coord2).toEqual(mirror(coord2, Union2, view));
         expect(coord2).toEqual(mirror(coord2, Union2, materialize));
 
         const coord3d2 = { x: 1, y: 2, z: null };
-        expect(coord3d2).toEqual(mirror(coord3d2, Union2, deserialize));
+        expect(coord3d2).toEqual(mirror(coord3d2, Union2, view));
         expect(coord3d2).toEqual(mirror(coord3d2, Union2, materialize));
     });
 });
