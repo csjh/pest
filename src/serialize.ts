@@ -136,6 +136,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
     return (ty.s = new Function("t", "r", fn)(ty.f, reserve));
 }
 
+// TODO: add serialize_into
 export function serialize<T>(
     data: NoInfer<AcceptBroad<T>>,
     schema: PestType<T>
