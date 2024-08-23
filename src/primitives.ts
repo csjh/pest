@@ -225,7 +225,6 @@ export function literal<const T>(value: T): PestType<T> {
         y: 0,
         u: 0,
         f: [],
-        // occupies a whole byte because z = 0 is used for dynamic types >:(
         z: 0,
         n: 0,
         e: null,
