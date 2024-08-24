@@ -95,17 +95,17 @@ function get_view(ty: PestTypeInternal): Deserializer {
         creator[name] = {
             get: new Function(
                 "d",
-                `return function(){return ${
+                `return function(){var v=this._,$=this.$;return ${
                     field.n
-                        ? `(this._.getUint8(this.$+${ty.y + (nulls >>> 3)})&${
+                        ? `(v.getUint8($+${ty.y + (nulls >>> 3)})&${
                               1 << (nulls & 7)
                           })?null:`
                         : ""
-                }d(this.$+${pos}${
+                }d($+${pos}${
                     ty.z < 0 && dynamics
-                        ? `+this._.getUint32(this.$+${(dynamics - 1) * 4},!0)`
+                        ? `+v.getUint32($+${(dynamics - 1) * 4},!0)`
                         : ""
-                },this._)}`
+                },v)}`
             )(get_view(field)),
             enumerable: true
         };
