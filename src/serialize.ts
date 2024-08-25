@@ -56,6 +56,7 @@ export function serialize_array(
         }
         if (data[i] != null) {
             ptr = serializer(writers, ptr, data[i]);
+            writers.u[start_of_nulls + (i >>> 3)] &= ~(1 << (i & 7));
         } else {
             writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
             if (ty.z > 0) ptr += ty.z;
