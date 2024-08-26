@@ -83,14 +83,14 @@ function get_deserializer(ty: PestTypeInternal): Materializer {
 }
 
 export function deserialize<T>(
-    msg: Uint8Array | ArrayBuffer,
+    msg: ArrayBufferView | ArrayBuffer,
     schema: PestType<T>
 ): T {
     /* @__PURE__ */ internalize(schema);
 
-    // @ts-expect-error
-    const buffer = (msg.buffer ?? msg) as ArrayBuffer;
-    const dv = new DataView(buffer);
+    const dv = ArrayBuffer.isView(msg)
+        ? new DataView(msg.buffer, msg.byteOffset, msg.byteLength)
+        : new DataView(msg);
 
     const type_id = dv.getInt32(0, true);
     if (type_id !== schema.i) {
