@@ -128,8 +128,8 @@ function get_serializer(ty: PestTypeInternal): Serializer {
         // TODO: experiment more with inlining
         prelude += `,_${i}=t[${i++}][1].s`;
 
-        if (type.z > 0) pos += type.z;
         if (type.z < 0) dynamics++;
+        else pos += type.z;
         nulls += type.n;
     }
 
