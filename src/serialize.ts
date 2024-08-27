@@ -7,14 +7,15 @@ import type {
     Serializer
 } from "./types.js";
 
-export function reserve(ptr: number, size: number, writers: BufferWriters) {
-    while (ptr + size >= writers.u.length) {
+export function reserve(amount: number, writers: BufferWriters) {
+    let size = writers.u.length;
+    if (amount > size) {
+        while (amount >= size) size *= 2;
         // @ts-expect-error
-        const buffer = writers.u.buffer.transfer(writers.u.length * 2);
+        const buffer = writers.u.buffer.transfer(size);
         writers.d = new DataView(buffer);
         writers.u = new Uint8Array(buffer);
     }
-    return size;
 }
 
 export function serialize_array(
@@ -25,7 +26,7 @@ export function serialize_array(
 ) {
     // reserve space for length, dynamic offset, possibly static data, and null table
     // 20 instead of 4 because max alignment skip is 16 bytes
-    reserve(ptr, 20 + (1 + (ty.z || 4)) * data.length, writers);
+    reserve(ptr + 20 + (1 + (ty.z || 4)) * data.length, writers);
 
     writers.d.setUint32(ptr, data.length, true);
     ptr += 4;
@@ -132,7 +133,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
         nulls += type.n;
     }
 
-    fn = `${prelude};return(w,p,a)=>{r(p,${pos},w);${fn}return p}`;
+    fn = `${prelude};return(w,p,a)=>{r(p+${pos},w);${fn}return p}`;
 
     return (ty.s = new Function("t", "r", fn)(ty.f, reserve));
 }
