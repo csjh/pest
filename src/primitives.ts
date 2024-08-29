@@ -26,7 +26,7 @@ const decoder = new TextDecoder();
 
 function encode_string(w: BufferWriters, ptr: number, data: string): number {
     // i think this is enough for utf-16
-    reserve(ptr, 4 + data.length * 3, w);
+    reserve(ptr + 4 + data.length * 3, w);
 
     ptr += 4;
 
