@@ -90,13 +90,13 @@ function get_view(ty: PestTypeInternal): Deserializer {
 
     const creator: PropertyDescriptorMap = { ...base };
 
-    for (const [name, field] of ty.f as [string, PestTypeInternal][]) {
+    for (const [name, type] of ty.f as [string, PestTypeInternal][]) {
         // same as in deserialize.ts, but lazily
         creator[name] = {
             get: new Function(
                 "d",
                 `return function(){var v=this._,$=this.$;return ${
-                    field.n
+                    type.n
                         ? `(v.getUint8($+${ty.y + (nulls >>> 3)})&${
                               1 << (nulls & 7)
                           })?null:`
@@ -106,13 +106,13 @@ function get_view(ty: PestTypeInternal): Deserializer {
                         ? `+v.getUint32($+${(dynamics - 1) * 4},!0)`
                         : ""
                 },v)}`
-            )(get_view(field)),
+            )(get_view(type)),
             enumerable: true
         };
 
-        if (field.z > 0) pos += field.z;
-        if (field.z < 0) dynamics++;
-        nulls += field.n;
+        if (type.z < 0) dynamics++;
+        else pos += type.z;
+        if (type.n) nulls++;
     }
 
     // a constructor function is necessary to trigger slack tracking

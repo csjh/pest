@@ -130,7 +130,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
 
         if (type.z < 0) dynamics++;
         else pos += type.z;
-        nulls += type.n;
+        if (type.n) nulls++;
     }
 
     fn = `${prelude};return(w,p,a)=>{r(p+${pos},w);${fn}return p}`;

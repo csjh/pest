@@ -53,8 +53,8 @@ function get_deserializer(ty: PestTypeInternal): Materializer {
     let prelude = "var _";
     let fn = `{`;
     let i = 0;
-    for (const [name, field] of ty.f as [string, PestTypeInternal][]) {
-        get_deserializer(field); // ensure materializer is cached
+    for (const [name, type] of ty.f as [string, PestTypeInternal][]) {
+        get_deserializer(type); // ensure materializer is cached
         /*
         one of four forms:
         if field is nullable and (dv.getUint8(ptr + nulls >>> 3) & (1 << (nulls & 7))) != 0:
@@ -66,15 +66,15 @@ function get_deserializer(ty: PestTypeInternal): Materializer {
         */
         // prettier-ignore
         fn += `${JSON.stringify(name)}:${
-            field.n ? `d.getUint8(p+${ty.y + (nulls >>> 3)})&${1 << (nulls & 7)}?null:` : ""
+            type.n ? `d.getUint8(p+${ty.y + (nulls >>> 3)})&${1 << (nulls & 7)}?null:` : ""
         }_${i}(p+${pos}${
             dynamics ? `+d.getUint32(p+${(dynamics - 1) * 4},!0)` : ""
         },d),`;
         prelude += `,_${i}=f[${i++}][1].m`;
 
-        if (field.z > 0) pos += field.z;
-        if (field.z < 0) dynamics++;
-        nulls += field.n;
+        if (type.z < 0) dynamics++;
+        else pos += type.z;
+        if (type.n) nulls++;
     }
     fn += `}`;
     fn = `${prelude};return(p,d)=>(${fn})`;
