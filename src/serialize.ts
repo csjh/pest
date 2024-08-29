@@ -57,9 +57,10 @@ export function serialize_array(
         }
         if (data[i] != null) {
             ptr = serializer(writers, ptr, data[i]);
-            writers.u[start_of_nulls + (i >>> 3)] &= ~(1 << (i & 7));
+            if (ty.n) writers.u[start_of_nulls + (i >>> 3)] &= ~(1 << (i & 7));
         } else {
             writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
+            // if (ty.n) isn't needed because there shouldn't be undefined/null in non-nullable stuff anyways
             if (ty.z > 0) ptr += ty.z;
         }
     }
