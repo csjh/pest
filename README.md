@@ -21,7 +21,7 @@ bun install pestjs
 
 ## Usage
 
-Types are defined using imported primitives, combined with the `struct` function.
+Types are defined using imported primitives, combined with the `struct` and `union` functions.
 
 ```typescript
 // server.ts
