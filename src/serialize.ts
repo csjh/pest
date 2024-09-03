@@ -70,23 +70,20 @@ export function serialize_array(
 function get_serializer(ty: PestTypeInternal): Serializer {
     if (ty.s !== null) return ty.s;
     if (ty.y === 1) {
-        (ty.f as PestTypeInternal[]).forEach(get_serializer);
+        const fields = ty.f as PestTypeInternal[];
+        fields.forEach(get_serializer);
         return (ty.s = (writers, ptr, data) => {
             let high = 0,
                 high_idx = 0;
-            for (let i = 0; i < ty.f.length; i++) {
-                const w = (ty.f[i] as PestTypeInternal).w(data);
+            for (let i = 0; i < fields.length; i++) {
+                const w = fields[i].w(data);
                 if (w > high) {
                     high = w;
                     high_idx = i;
                 }
             }
             writers.u[ptr] = high_idx;
-            return (ty.f[high_idx] as PestTypeInternal).s!(
-                writers,
-                ptr + 1,
-                data
-            );
+            return fields[high_idx].s!(writers, ptr + 1, data);
         });
     }
 

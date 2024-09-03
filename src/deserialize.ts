@@ -40,9 +40,9 @@ export function deserialize_array(
 function get_deserializer(ty: PestTypeInternal): Materializer {
     if (ty.m !== null) return ty.m;
     if (ty.y === 1) {
-        (ty.f as PestTypeInternal[]).forEach(get_deserializer);
-        return (ty.m = (ptr, dv) =>
-            (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].m!(ptr + 1, dv));
+        const fields = ty.f as PestTypeInternal[];
+        fields.forEach(get_deserializer);
+        return (ty.m = (ptr, dv) => fields[dv.getUint8(ptr)].m!(ptr + 1, dv));
     }
 
     // values start after the offset table
