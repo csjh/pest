@@ -13,6 +13,7 @@ export const TypedArrays = [
     Float64Array
 ];
 
+// these just help with changing into the internal type in ./types.ts
 export function internalize(t: unknown): asserts t is PestTypeInternal {}
 export function internalize_array(
     t: unknown
