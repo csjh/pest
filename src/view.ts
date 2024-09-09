@@ -24,7 +24,7 @@ const handler = {
     },
     getPrototypeOf() {
         return Array.prototype;
-    }
+    },
 } satisfies ProxyHandler<ProxyArray>;
 
 for (const p of Object.getOwnPropertyNames(Reflect)) {
@@ -69,14 +69,14 @@ function get_array_view(ptr: number, dv: DataView, ty: PestTypeInternal) {
 
 const base = {
     $: { value: 0, writable: true },
-    _: { value: null, writable: true }
+    _: { value: null, writable: true },
 };
 function get_view(ty: PestTypeInternal): Deserializer {
     if (ty.d !== null) return ty.d;
     if (ty.y === 1) {
-        (ty.f as PestTypeInternal[]).forEach(get_view);
-        return (ty.d = (ptr, dv) =>
-            (ty.f as PestTypeInternal[])[dv.getUint8(ptr)].d!(ptr + 1, dv));
+        const fields = ty.f as PestTypeInternal[];
+        fields.forEach(get_view);
+        return (ty.d = (ptr, dv) => fields[dv.getUint8(ptr)].d!(ptr + 1, dv));
     }
     if (ty.e) {
         get_view(ty.e);
@@ -107,7 +107,7 @@ function get_view(ty: PestTypeInternal): Deserializer {
                         : ""
                 },v)}`
             )(get_view(type)),
-            enumerable: true
+            enumerable: true,
         };
 
         if (type.z < 0) dynamics++;
