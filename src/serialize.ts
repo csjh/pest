@@ -9,7 +9,7 @@ import type {
 
 export function reserve(amount: number, writers: BufferWriters) {
     let size = writers.u.length;
-    if (amount > size) {
+    if (amount >= size) {
         while (amount >= size) size *= 2;
         // @ts-expect-error
         const buffer = writers.u.buffer.transfer(size);
@@ -131,7 +131,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
         if (type.n) nulls++;
     }
 
-    fn = `${prelude};return(w,p,a)=>{r(p+${pos},w);${fn}return p}`;
+    fn = `${prelude};return(w,p,a)=>{r(p+${pos + ty.y + ty.u},w);${fn}return p}`;
 
     return (ty.s = new Function("t", "r", fn)(ty.f, reserve));
 }
