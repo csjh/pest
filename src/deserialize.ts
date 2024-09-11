@@ -54,7 +54,7 @@ function get_deserializer(ty: PestTypeInternal): Materializer {
     let fn = `{`;
     let i = 0;
     for (const [name, type] of ty.f as [string, PestTypeInternal][]) {
-        get_deserializer(type); // ensure materializer is cached
+        get_deserializer(type); // ensure deserializer is cached
         /*
         one of four forms:
         if field is nullable and (dv.getUint8(ptr + nulls >>> 3) & (1 << (nulls & 7))) != 0:
