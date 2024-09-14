@@ -153,6 +153,7 @@ export function array<E, D extends number = 1>(
         z: -1,
         n: 0,
         e: el,
+        // empty arrays are a 100% match
         w: (data) => (data.length ? el.w(data[0]) : 1),
         s: (writers, ptr, data) => serialize_array(el, writers, ptr, data),
         // the same as the above isn't done because i don't want ./view.ts to be shipped unless explicitly imported
@@ -228,6 +229,7 @@ export function literal<const T>(value: T): PestType<T> {
         z: 0,
         n: 0,
         e: null,
+        // hard to compare literal objects
         w: (data) =>
             +(
                 data === value ||
