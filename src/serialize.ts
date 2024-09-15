@@ -55,11 +55,13 @@ export function serialize_array(
                 true
             );
         }
+        const bit_index = start_of_nulls + (i >>> 3),
+            bit_value = 1 << (i & 7);
         if (data[i] != null) {
             ptr = serializer(writers, ptr, data[i]);
-            if (ty.n) writers.u[start_of_nulls + (i >>> 3)] &= ~(1 << (i & 7));
+            if (ty.n) writers.u[bit_index] &= ~bit_value;
         } else {
-            writers.u[start_of_nulls + (i >>> 3)] |= 1 << (i & 7);
+            writers.u[bit_index] |= bit_value;
             // if (ty.n) isn't needed because there shouldn't be undefined/null in non-nullable stuff anyways
             if (ty.z > 0) ptr += ty.z;
         }
