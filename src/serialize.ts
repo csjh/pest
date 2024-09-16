@@ -61,7 +61,8 @@ export function serialize_array(
             ptr = serializer(writers, ptr, data[i]);
             if (ty.n) writers.u[bit_index] &= ~bit_value;
         } else {
-            writers.u[bit_index] |= bit_value;
+            // the if shouldn't be necessary here but helps not fuck up people doing wrong stuff
+            if (ty.n) writers.u[bit_index] |= bit_value;
             // if (ty.n) isn't needed because there shouldn't be undefined/null in non-nullable stuff anyways
             if (ty.z > 0) ptr += ty.z;
         }
