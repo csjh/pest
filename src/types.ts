@@ -67,3 +67,5 @@ declare const type: unique symbol;
 export interface PestType<T> {
     readonly [type]: T;
 }
+
+export type InferType<T> = T extends PestType<infer U> ? U : never;
