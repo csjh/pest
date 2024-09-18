@@ -25,12 +25,14 @@ Types are defined using imported primitives, combined with the `struct` and `uni
 
 ```typescript
 // server.ts
-import { serialize, struct, i32, string } from 'pestjs';
+import { serialize, struct, i32, string, type InferType } from 'pestjs';
 
 const User = struct({
     id: i32,
     name: string
 });
+
+type User = InferType<typeof User>;
 
 app.get('/user', (req, res) => {
     const user = {
