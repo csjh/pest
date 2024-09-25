@@ -90,6 +90,7 @@ function get_view(ty: PestTypeInternal): Deserializer {
 
     const creator: PropertyDescriptorMap = { ...base };
 
+    // cast is safe because `PestTypeInternal[]` path is blocked behind `ty.y === 1` check
     for (const [name, type] of ty.f as [string, PestTypeInternal][]) {
         // same as in deserialize.ts, but lazily
         creator[name] = {
