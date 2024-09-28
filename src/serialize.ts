@@ -4,7 +4,7 @@ import type {
     BufferWriters,
     PestType,
     PestTypeInternal,
-    Serializer
+    Serializer,
 } from "./types.js";
 
 export function reserve(amount: number, writers: BufferWriters) {
@@ -79,7 +79,7 @@ function get_serializer(ty: PestTypeInternal): Serializer {
         return (ty.s = (writers, ptr, data) => {
             let high = 0,
                 high_idx = 0,
-                ;
+                len = fields.length;
             for (let i = 0; i < len; i++) {
                 const w = fields[i].w(data);
                 if (w > high) {
@@ -136,7 +136,9 @@ function get_serializer(ty: PestTypeInternal): Serializer {
         if (type.n) nulls++;
     }
 
-    fn = `${prelude};return(w,p,a)=>{r(p+${pos + ty.y + ty.u},w);${fn}return p}`;
+    fn = `${prelude};return(w,p,a)=>{r(p+${
+        pos + ty.y + ty.u
+    },w);${fn}return p}`;
 
     return (ty.s = new Function("t", "r", fn)(ty.f, reserve));
 }
@@ -151,7 +153,7 @@ export function serialize<T>(
     const buffer = new ArrayBuffer(1024);
     const writers = {
         d: new DataView(buffer),
-        u: new Uint8Array(buffer)
+        u: new Uint8Array(buffer),
     };
 
     writers.d.setInt32(0, schema.i, true);
