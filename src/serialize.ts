@@ -24,30 +24,31 @@ export function serialize_array(
     ptr: number,
     data: any[]
 ) {
+    const len = data.length;
     // reserve space for length, dynamic offset, possibly static data, and null table
     // 20 instead of 4 because max alignment skip is 16 bytes
-    reserve(ptr + 20 + (1 + (ty.z || 4)) * data.length, writers);
+    reserve(ptr + 20 + (1 + (ty.z || 4)) * len, writers);
 
-    writers.d.setUint32(ptr, data.length, true);
+    writers.d.setUint32(ptr, len, true);
     ptr += 4;
 
     // skip over dynamic offset table
     const start_of_offsets = ptr;
     if (ty.z < 0) {
-        ptr += 4 * data.length;
+        ptr += 4 * len;
     }
 
     // skip over null table otherwise align if TypedArray is available
     const start_of_nulls = ptr;
     if (ty.n) {
-        ptr += (data.length + 7) >>> 3;
+        ptr += (len + 7) >>> 3;
     } else if (0 <= ty.i && ty.i < 10) {
         ptr += -ptr & (ty.z - 1);
     }
 
     const start_of_data = ptr;
     const serializer = get_serializer(ty);
-    for (let i = 0; i < data.length; i++) {
+    for (let i = 0; i < len; i++) {
         if (ty.z < 0) {
             writers.d.setUint32(
                 start_of_offsets + 4 * i,
@@ -77,8 +78,9 @@ function get_serializer(ty: PestTypeInternal): Serializer {
         fields.forEach(get_serializer);
         return (ty.s = (writers, ptr, data) => {
             let high = 0,
-                high_idx = 0;
-            for (let i = 0; i < fields.length; i++) {
+                high_idx = 0,
+                ;
+            for (let i = 0; i < len; i++) {
                 const w = fields[i].w(data);
                 if (w > high) {
                     high = w;

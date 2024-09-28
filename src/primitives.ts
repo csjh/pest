@@ -25,27 +25,29 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 function encode_string(w: BufferWriters, ptr: number, data: string): number {
-    // i think this is enough for utf-16
-    reserve(ptr + 4 + data.length * 3, w);
+    const len = data.length;
+
+    // i think this is enough for utf-8
+    reserve(ptr + 4 + len * 3, w);
 
     ptr += 4;
 
     // stolen from [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen/blob/cf186acf48c4b0649934d19ba1aa18282bd2ec44/crates/cli/tests/reference/string-arg.js#L46)
     let length = 0;
-    for (; length < data.length; length++) {
+    for (; length < len; length++) {
         const code = data.charCodeAt(length);
         if (code > 0x7f) break;
         w.u[ptr + length] = code;
     }
 
-    if (length !== data.length) {
+    if (length !== len) {
         if (length !== 0) {
             data = data.slice(length);
         }
 
         length += encoder.encodeInto(
             data,
-            w.u.subarray(ptr + length, ptr + length + data.length * 3)
+            w.u.subarray(ptr + length, ptr + length + len * 3)
         ).written;
     }
 
@@ -72,8 +74,8 @@ export const regexp =  /* @__PURE__ */ primitive(13, -1, (w, ptr, data): number 
 }, (data) => +(data instanceof RegExp)) as PestType<RegExp>;
 
 function string_hash(s: string) {
-    let hash = 0;
-    for (let i = 0; i < s.length; i++) {
+    let hash = 0, len = s.length;
+    for (let i = 0; i < len; i++) {
         hash = (Math.imul(hash, 31) + s.charCodeAt(i)) | 0;
     }
     return hash;
