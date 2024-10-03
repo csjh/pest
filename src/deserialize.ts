@@ -42,6 +42,8 @@ function get_deserializer(ty: PestTypeInternal): Materializer {
     if (ty.y === 1) {
         const fields = ty.f as PestTypeInternal[];
         fields.forEach(get_deserializer);
+        // ptr + 1 to skip over the type id
+        // note: 256 is the maximum number of fields
         return (ty.m = (ptr, dv) => fields[dv.getUint8(ptr)].m!(ptr + 1, dv));
     }
 
