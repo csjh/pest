@@ -11,7 +11,7 @@ export function reserve(amount: number, writers: BufferWriters) {
     let size = writers.u.length;
     if (amount >= size) {
         while (amount >= size) size *= 2;
-        // @ts-expect-error
+        // @ts-expect-error todo: this should probably use resizable arrays
         const buffer = writers.u.buffer.transfer(size);
         writers.d = new DataView(buffer);
         writers.u = new Uint8Array(buffer);
